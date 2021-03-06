@@ -84,6 +84,12 @@ async def quotes(request: Request) -> JSONResponse:
     # Get two random members.
     result = await redis.srandmember(f'{day}:quotes', count=2)
 
+    # Return a warning if there aren't enough quotes.
+    if len(result) < 2:
+      return JSONResponse({
+        "message": "Not enough quotes yet. Come back later!"
+      }, status_code=200)
+
     # Store those members in cache.
     await redis.rpush(f'{day}:request:{user_id}', *result)
 
