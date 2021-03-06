@@ -19,7 +19,7 @@ async def lifespan(app):
   """
 
   # Create the Redis connection.
-  url = config("REDIS_URL")
+  url = config("REDIS_TLS_URL", default=None) or config("REDIS_URL")
   redis = await aioredis.create_redis_pool(url, encoding="utf-8")
 
   # Bind the Redis connection to the app state.
