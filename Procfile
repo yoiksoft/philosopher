@@ -1,1 +1,1 @@
-web: gunicorn -w 1 uvicorn.workers.UvicornWorker --log-level warning app:app
+web: uvicorn --host 0.0.0.0 app:app
