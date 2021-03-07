@@ -22,6 +22,7 @@ async def user(user_id):
   user = await response.json()
   await session.close()
 
+  print(user)
   return user
 
 

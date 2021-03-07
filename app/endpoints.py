@@ -64,7 +64,7 @@ async def qod(request: Request):
   return JSONResponse({
     "message": "Successfully got quote of the day!",
     "data": {
-      "user": f'{user["username"]}#{user["discriminator"]}',
+      "user": f'{user.get("username", "unknown")}#{user.get("discriminator", "0000")}',
       "quote": quote
     }
   }, status_code=200)
