@@ -5,13 +5,13 @@ import uuid
 from datetime import datetime
 
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 
 from app.auth import requires_auth
 
 
 @requires_auth
-async def ping(request: Request) -> JSONResponse:
+async def ping(request: Request):
   """Ping endpoint
   """
 
@@ -27,7 +27,7 @@ async def ping(request: Request) -> JSONResponse:
   }, status_code=200)
 
 
-async def qod(request: Request) -> JSONResponse:
+async def qod(request: Request):
   """Get the quote of the day.
   """
 
@@ -47,9 +47,7 @@ async def qod(request: Request) -> JSONResponse:
   res = await redis.zrevrangebyscore(f'{date}:scores', offset=0, count=1)
   
   if not res or date == datetime.utcnow().strftime("%Y-%m-%d"):
-    return JSONResponse({
-      "message": "There is no quote of the day from this date."
-    }, status_code=200)
+    return Response(status_code=204)
 
   user = res.pop()
 
@@ -60,12 +58,12 @@ async def qod(request: Request) -> JSONResponse:
     "message": "Successfully got quote of the day!",
     "data": {
       "user": user,
-      "qod": quote
+      "quote": quote
     }
-  })
+  }, status_code=200)
 
 @requires_auth
-async def quotes(request: Request) -> JSONResponse:
+async def quotes(request: Request):
   """Get two quotes to vote on.
   """
 
@@ -86,9 +84,7 @@ async def quotes(request: Request) -> JSONResponse:
 
     # Return a warning if there aren't enough quotes.
     if len(result) < 2:
-      return JSONResponse({
-        "message": "Not enough quotes yet. Come back later!"
-      }, status_code=200)
+      return Response(status_code=204)
 
     # Store those members in cache.
     await redis.rpush(f'{day}:request:{user_id}', *result)
@@ -98,13 +94,13 @@ async def quotes(request: Request) -> JSONResponse:
 
   # Return the quotes
   return JSONResponse({
-    "message": "Success",
+    "message": "Success!",
     "data": quotes
   }, status_code=200)
 
 
 @requires_auth
-async def vote(request: Request) -> JSONResponse:
+async def vote(request: Request):
   """Vote on quotes
   """
 
@@ -141,9 +137,7 @@ async def vote(request: Request) -> JSONResponse:
   # If they voted with a skip.
   if vote == 2:
     await redis.delete(f'{day}:request:{user_id}')
-    return JSONResponse({
-      "message": "Successfuly skipped!"
-    }, status_code=200)
+    return Response(status_code=204)
   
   # Get the users.
   options = await redis.lrange(f'{day}:request:{user_id}', 0, -1)
@@ -173,7 +167,7 @@ async def vote(request: Request) -> JSONResponse:
 
 
 @requires_auth
-async def submit(request: Request) -> JSONResponse:
+async def submit(request: Request):
   """Submit a quote for the day
   """
 
@@ -189,10 +183,7 @@ async def submit(request: Request) -> JSONResponse:
   # Determine if a submission has already been made.
   sub = await redis.get(f'{day}:user:{user_id}')
   if sub:
-    return JSONResponse({
-      "message": "You have already submitted a quote for today.",
-      "data": sub
-    }, status_code=200)
+    return Response(status_code=204)
 
   # Get the quote from request body.
   data = await request.json()
