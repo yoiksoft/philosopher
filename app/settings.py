@@ -5,6 +5,7 @@ One unified place to hold configurations for the application.
 
 import typing
 from starlette.middleware import Middleware
+from starlette.middleware.cors import CORSMiddleware
 
 from app import utils
 
@@ -14,7 +15,9 @@ DEBUG = utils.config("DEBUG", cast=bool, default=False)
 
 
 # Load any middleware to run with the application.
-MIDDLEWARE: typing.Sequence[Middleware] = []
+MIDDLEWARE: typing.Sequence[Middleware] = [
+  Middleware(CORSMiddleware, allow_origins=['*'])
+]
 
 
 # Collection of handlers for HTTP exceptions.
