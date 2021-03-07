@@ -7,6 +7,7 @@ from datetime import datetime
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
+from app import utils
 from app.auth import requires_auth
 
 
@@ -46,18 +47,24 @@ async def qod(request: Request):
   # Get the quote of the day.
   res = await redis.zrevrangebyscore(f'{date}:scores', offset=0, count=1)
   
+  # Prevent people from seeing Quote of the Day for current day.
   if not res or date == datetime.utcnow().strftime("%Y-%m-%d"):
     return Response(status_code=204)
 
-  user = res.pop()
+  # Pop the user ID.
+  user_id = res.pop()
 
-  quote = await redis.get(f'{date}:user:{user}')
+  # Get the quote data from Redis.
+  quote = await redis.get(f'{date}:user:{user_id}')
+
+  # Get the rich user data from Discord.
+  user = await utils.user(user_id)
 
   # Return the quote of the day.
   return JSONResponse({
     "message": "Successfully got quote of the day!",
     "data": {
-      "user": user,
+      "user": f'{user["username"]}#{user["discriminator"]}',
       "quote": quote
     }
   }, status_code=200)
