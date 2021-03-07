@@ -16,7 +16,9 @@ DEBUG = utils.config("DEBUG", cast=bool, default=False)
 
 # Load any middleware to run with the application.
 MIDDLEWARE: typing.Sequence[Middleware] = [
-  Middleware(CORSMiddleware, allow_origins=['*'])
+  Middleware(CORSMiddleware, allow_origins=[
+    "http://localhost:3000"
+  ])
 ]
 
 
