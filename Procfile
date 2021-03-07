@@ -1,1 +1,1 @@
-web: uvicorn --host 0.0.0.0 --port $PORT app:app
+web: uvicorn --host 0.0.0.0 --port $PORT app:app --log-level trace
