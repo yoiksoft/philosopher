@@ -107,6 +107,27 @@ async def quotes(request: Request):
 
 
 @requires_auth
+async def voted(request: Request):
+  """Check if you've voted already
+  """
+
+  redis = request.app.state.redis
+  user_id = request.state.user["id"]
+  day = datetime.utcnow().strftime("%Y-%m-%d")
+
+  voted = await redis.exists(f'{day}:user:{user_id}')
+
+  if voted:
+    return JSONResponse({
+      "message": "You have already voted today."
+    }, status_code=202)
+
+  return JSONResponse({
+    "message": "You have not yet voted today."
+  }, status_code=200)
+
+
+@requires_auth
 async def vote(request: Request):
   """Vote on quotes
   """

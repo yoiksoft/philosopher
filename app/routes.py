@@ -11,26 +11,31 @@ ROUTES = [
   Route(
     "/ping",
     endpoint=endpoints.ping,
-    methods=["GET", "OPTIONS"],
+    methods=["GET"],
     name="ping"),
   Route(
     "/qod",
     endpoint=endpoints.qod,
-    methods=["GET", "OPTIONS"],
+    methods=["GET"],
     name="qod"),
   Route(
     "/quotes",
     endpoint=endpoints.quotes,
-    methods=["GET", "OPTIONS"],
+    methods=["GET"],
     name="quotes"),
+  Route(
+    "/voted",
+    endpoint=endpoints.voted,
+    methods=["GET"],
+    name="voted"),
   Route(
     "/vote",
     endpoint=endpoints.vote,
-    methods=["POST", "OPTIONS"],
+    methods=["POST"],
     name="vote"),
   Route(
     "/submit",
     endpoint=endpoints.submit,
-    methods=["POST", "OPTIONS"],
+    methods=["POST"],
     name="submit"),
 ]
