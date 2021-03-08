@@ -120,7 +120,6 @@ async def vote(request: Request):
   # Get necessary date values.
   day = datetime.utcnow().strftime("%Y-%m-%d")
 
-  print(request)
   # Get the vote.
   try:
     body = await request.json()
@@ -129,11 +128,9 @@ async def vote(request: Request):
       "message": "Missing request body."
     }, status_code=400)
 
-  print(body)
   vote = body.get("vote")
-  print(vote)
 
-  if not vote:
+  if not vote and vote != 0:
     return JSONResponse({
       "message": "Missing vote."
     }, status_code=400)
