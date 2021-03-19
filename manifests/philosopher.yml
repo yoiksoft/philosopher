@@ -23,8 +23,10 @@ spec:
       paths:
       - path: /${YOIK_RESOURCE_ID}(/|$)(.*)
         backend:
-          serviceName: philosopher-${YOIK_RESOURCE_ID}
-          servicePort: 8000
+          service:
+            name: philosopher-${YOIK_RESOURCE_ID}
+            port:
+              number: 8000
   tls:
   - hosts:
     - philosopher.yoik.software
