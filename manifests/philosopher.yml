@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: philosopher
+  name: philosopher-${YOIK_RESOURCE_ID}
 spec:
   selector:
-    app: philosopher
+    app: philosopher-${YOIK_RESOURCE_ID}
   ports:
   - port: 8000
     targetPort: 8000
@@ -12,39 +12,40 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: philosopher
+  name: philosopher-${YOIK_RESOURCE_ID}
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   rules:
   - host: philosopher.yoik.software
     http:
       paths:
-      - path: /
+      - path: /${YOIK_RESOURCE_ID}(/|$)(.*)
         backend:
-          serviceName: philosopher
+          serviceName: philosopher-${YOIK_RESOURCE_ID}
           servicePort: 8000
   tls:
   - hosts:
     - philosopher.yoik.software
-    secretName: philosopher-cert
+    secretName: philosopher-${YOIK_RESOURCE_ID}-cert
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: philosopher
+  name: philosopher-${YOIK_RESOURCE_ID}
 spec:
   selector:
     matchLabels:
-      app: philosopher
+      app: philosopher-${YOIK_RESOURCE_ID}
   template:
     metadata:
       labels:
-        app: philosopher
+        app: philosopher-${YOIK_RESOURCE_ID}
     spec:
       containers:
       - name: philosopher
-        image: ghcr.io/yoiksoft/philosopher:v1.0.0-beta.1
+        image: ${YOIK_RESOURCE_IMAGE}
         resources:
           requests:
             cpu: 200m
