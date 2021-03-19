@@ -30,7 +30,7 @@ jobs:
 
       # Setup Kubernetes CLI with DigitalOcean.
     - name: Setup Kubernetes CLI
-      uses: matootie/dokube@v1.3.3
+      uses: matootie/dokube@v1.3.4
       with:
         personalAccessToken: ${{ secrets.DIGITALOCEAN_TOKEN }}
         clusterName: "kwot"
