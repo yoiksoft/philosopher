@@ -1,0 +1,11 @@
+# Have matootie review any changes made to dependencies and scripts.
+Pipfile       @matootie
+Pipfile.lock  @matootie
+
+# Have matootie review any changes made to repository meta and DevOps
+# configurations.
+/.github/     @matootie
+*.md          @matootie
+
+# Have matootie review any changes made to Kubernetes resource templates.
+/manifests/   @matootie
