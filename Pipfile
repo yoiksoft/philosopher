@@ -12,6 +12,7 @@ aioredis = "*"
 uvicorn = "*"
 gunicorn = "*"
 aiohttp = "*"
+sentry-sdk = "*"
 
 [dev-packages]
 
