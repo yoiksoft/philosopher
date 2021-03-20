@@ -5,6 +5,7 @@ Functions and classes to help the application.
 
 import aiohttp
 import aioredis
+import sentry_sdk
 from starlette.config import Config
 
 
@@ -31,6 +32,9 @@ async def lifespan(app):
   In this case we want a connection to Redis to persist throughout the lifespan 
   of the app.
   """
+
+  # Initialize the Sentry SDK.
+  sentry_sdk.init(dsn=config("SENTRY_DSN", default=None))
 
   # Create the Redis connection.
   url = config("REDIS_URL")
