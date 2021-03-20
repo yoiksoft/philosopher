@@ -177,14 +177,20 @@ async def vote(request: Request):
 
   # Specifically select the one the user voted for.
   try:
-    winner = options[vote]
+    winner = options.pop(vote)
+    loser = options.pop()
   except IndexError:
     return JSONResponse({
       "message": "Something went wrong."
     }, status_code=500)
 
-  # Increment the winner score.
-  await redis.zincrby(f'{day}:scores', 1, winner)
+  # Get the scores of each quote and calculate the winnings.
+  score_winner = await redis.zscore(f'{day}:scores', winner)
+  score_loser = await redis.zscore(f'{day}:scores', loser)
+  winnings = utils.calculate_winnings(score_winner, score_loser)
+
+  # Apply winnings to the winner score.
+  await redis.zincrby(f'{day}:scores', winnings, winner)
 
   # Reset the quote request.
   await redis.delete(f'{day}:request:{user_id}')
