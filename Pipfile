@@ -10,7 +10,6 @@ server = "uvicorn app:app --reload"
 starlette = "*"
 aioredis = "*"
 uvicorn = "*"
-gunicorn = "*"
 aiohttp = "*"
 sentry-sdk = "*"
 
