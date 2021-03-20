@@ -25,6 +25,17 @@ async def user(user_id):
   return user
 
 
+def calculate_winnings(winners_score, losers_score):
+  """Function to calculate winnings for the winning quote of a vote.
+
+  Takes the winners current score and the losers current score, used to 
+  influence the resulting winnings that will be applied to the winning quote. 
+  Returns an integer representing the points to add to the winning quotes score.
+  """
+
+  return 1
+
+
 async def lifespan(app):
   """Things to keep alive througout the lifespan of the app
 
