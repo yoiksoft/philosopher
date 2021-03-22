@@ -8,6 +8,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from app import utils
+from app import settings
 from app.auth import requires_auth
 
 
@@ -214,8 +215,23 @@ async def submit(request: Request):
     return Response(status_code=204)
 
   # Get the quote from request body.
-  data = await request.json()
+  try:
+    data = await request.json()
+  except:
+    return JSONResponse({
+      "message": "Missing request body."
+    }, status_code=400)
   sub = data["quote"]
+
+  # Validate the quote body.
+  if len(sub) > settings.QUOTE_MAX_CHARACTERS:
+    return JSONResponse({
+      "message": f"Quote is too long. Must be maximum {settings.QUOTE_MAX_CHARACTERS} characters.",
+      "data": {
+        "quote": sub,
+        "length": len(sub)
+      }
+    }, status_code=400)
 
   # Write the submission to database.
   await redis.set(f'{day}:user:{user_id}', sub)
