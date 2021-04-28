@@ -4,38 +4,14 @@
 from starlette.routing import Route, Mount
 
 from app import endpoints
+from app.services import ping
 
 
 # Routes for the application.
 ROUTES = [
   Route(
     "/ping",
-    endpoint=endpoints.ping,
+    endpoint=ping.handler,
     methods=["GET"],
     name="ping"),
-  Route(
-    "/qod",
-    endpoint=endpoints.qod,
-    methods=["GET"],
-    name="qod"),
-  Route(
-    "/quotes",
-    endpoint=endpoints.quotes,
-    methods=["GET"],
-    name="quotes"),
-  Route(
-    "/voted",
-    endpoint=endpoints.voted,
-    methods=["GET"],
-    name="voted"),
-  Route(
-    "/vote",
-    endpoint=endpoints.vote,
-    methods=["POST"],
-    name="vote"),
-  Route(
-    "/submit",
-    endpoint=endpoints.submit,
-    methods=["POST"],
-    name="submit"),
 ]

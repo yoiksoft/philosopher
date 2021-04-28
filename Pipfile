@@ -12,6 +12,7 @@ aioredis = "*"
 uvicorn = "*"
 aiohttp = "*"
 sentry-sdk = "*"
+python-jose = "*"
 
 [dev-packages]
 
