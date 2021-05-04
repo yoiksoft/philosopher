@@ -1,10 +1,82 @@
-"""Authentication and authorization related functions and routes
-"""
-
 import json
+
 import aiohttp
 from jose import jwt, exceptions
 from starlette.responses import JSONResponse
+
+from app.utils import config
+from app.utils.redis import Redis
+
+
+__client_id = config("AUTH0_CLIENT_ID")
+__client_secret = config("AUTH0_CLIENT_SECRET")
+
+
+class AuthenticationError(Exception):
+  pass
+
+
+async def get_management_token():
+  """Get management token to use the Auth0 Management API.
+  """
+
+  redis = Redis().connection
+
+  # Check for cached token in Redis.
+  token = await redis.get("philosopher:token")
+  # If no cache, fetch new.
+  if not token:
+
+    # Send the request for a new token.
+    session = aiohttp.ClientSession(headers={
+      "Content-Type": "application/json"
+    })
+    response = await session.post(
+      f"https://kwot.us.auth0.com/oauth/token",
+      data=json.dumps({
+        "client_id": __client_id,
+        "client_secret": __client_secret,
+        "audience": "https://kwot.us.auth0.com/api/v2/",
+        "grant_type": "client_credentials"
+      })
+    )
+    token_data = await response.json()
+    await session.close()
+
+    # Store the token data.
+    print(token_data)
+    token = token_data["access_token"]
+    await redis.set("philosopher:token", token)
+    
+  # Return token.
+  return token
+
+
+def uses_user(func):
+  """Wrapper that sends off rich user data to the underlying endpoint.
+  """
+  async def inner(request, *args, **kwargs):
+    try:
+      user_data = await get_user(request.state.user["sub"])
+      return await func(request, *args, user=user_data, **kwargs)
+    except AttributeError:
+      raise AuthenticationError("Endpoint must require authentication before attempting to access underlying request user.")
+  return inner
+
+
+async def get_user(user_id, fields = ["user_id", "username", "nickname", "name"]):
+  """Get rich user data by user ID.
+  """
+
+  token = await get_management_token()
+  fields_string = ",".join(fields)
+
+  session = aiohttp.ClientSession(headers={"Authorization": f"Bearer {token}"})
+  response = await session.get(f"https://kwot.us.auth0.com/api/v2/users/{user_id}?fields={fields_string}&include_fields=true")
+  user = await response.json()
+  await session.close()
+
+  return user
 
 
 def find_matching_key(kid, keys):
@@ -27,9 +99,11 @@ def find_matching_key(kid, keys):
   return rsa_key
 
 
-async def get_keys(redis, from_cache=True):
+async def get_keys(from_cache=True):
   """Fetch keys from cache and/or from JWKS endpoint.
   """
+
+  redis = Redis().connection
 
   keys_raw = None
   jwks = None
@@ -59,9 +133,6 @@ def requires_auth(func):
     """Auth wrapper
     """
 
-    # Alias the Redis connection.
-    redis = request.app.state.redis
-
     # Get the Authorization header.
     header = request.headers.get('Authorization')
 
@@ -80,7 +151,7 @@ def requires_auth(func):
     token = header[7:]
 
     # Fetch keys from JSON Web Key Set.
-    jwks = await get_keys(redis, from_cache=True)
+    jwks = await get_keys(from_cache=True)
     
     # Get the token header without verifying it.
     try:
@@ -96,7 +167,7 @@ def requires_auth(func):
     # Return error if there's no matching signing key.
     if not rsa_key:
       # Get a fresh set of keys just in case we just missed a new sign.
-      jwks = await get_keys(redis, from_cache=False)
+      jwks = await get_keys(from_cache=False)
       # Attempt to find key again.
       rsa_key = find_matching_key(unverified_header["kid"], jwks["keys"])
       # If we still don't have a matching key.

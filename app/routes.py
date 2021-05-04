@@ -3,7 +3,6 @@
 
 from starlette.routing import Route, Mount
 
-from app import endpoints
 from app.services import ping
 
 

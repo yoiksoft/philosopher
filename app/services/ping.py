@@ -1,9 +1,8 @@
 from starlette.responses import JSONResponse
 
-from app.auth import requires_auth
-from app.utils import uses_redis, uses_user
+from app.utils.auth import requires_auth, uses_user
+from app.utils.redis import uses_redis
 
-@requires_auth
 @uses_redis
 @uses_user
 async def handler(request, redis, user):
