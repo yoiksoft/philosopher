@@ -12,23 +12,6 @@ from app import settings
 from app.auth import requires_auth
 
 
-@requires_auth
-async def ping(request: Request):
-  """Ping endpoint
-  """
-
-  # Alias the Redis connection.
-  redis = request.app.state.redis
-
-  # Fetch a response from Redis.
-  response = await redis.ping()
-
-  # Return the response.
-  return JSONResponse({
-    "message": f'{request.state.user["username"]}, {response}'
-  }, status_code=200)
-
-
 async def qod(request: Request):
   """Get the quote of the day.
   """
@@ -59,13 +42,13 @@ async def qod(request: Request):
   quote = await redis.get(f'{date}:user:{user_id}')
 
   # Get the rich user data from Discord.
-  user = await utils.user(user_id)
+  user = await utils.user(redis, user_id)
 
   # Return the quote of the day.
   return JSONResponse({
     "message": "Successfully got quote of the day!",
     "data": {
-      "user": f'{user.get("username", "unknown")}#{user.get("discriminator", "0000")}',
+      "user": f'{user_id}',
       "quote": quote
     }
   }, status_code=200)
