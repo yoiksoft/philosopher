@@ -9,6 +9,7 @@ from starlette.middleware.cors import CORSMiddleware
 from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 
 from app import utils
+from app.utils.lifespan import lifespan
 
 
 # Load whether or not to run the application in debug mode from config.
@@ -40,4 +41,4 @@ EXCEPTION_HANDLERS: typing.Sequence[typing.Tuple[int, typing.Callable]] = [
 
 # Lifespan function to configure parts of the app that are needed throughout
 # it's lifespan.
-LIFESPAN: typing.AsyncGenerator = utils.lifespan
+LIFESPAN: typing.AsyncGenerator = lifespan
