@@ -1,4 +1,5 @@
 import sentry_sdk
+from tortoise import Tortoise
 
 from app.utils import config
 from app.utils.redis import Redis
@@ -18,6 +19,14 @@ async def lifespan(app):
   url = config("REDIS_URL")
   redis = Redis()
   await redis.initialize(url=url)
+
+  # Create the database connection.
+  db_url = config("DATABASE_URL")
+  await Tortoise.init(
+    db_url=db_url,
+    modules={"models": ["app.models"]}
+  )
+  await Tortoise.generate_schemas()
 
   # Yield as the app runs.
   yield

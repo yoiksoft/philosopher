@@ -16,6 +16,12 @@ class AuthenticationError(Exception):
   pass
 
 
+class User:
+  def __init__(self, user_id, nickname):
+    self.user_id = user_id
+    self.nickname = nickname
+
+
 async def get_management_token():
   """Get management token to use the Auth0 Management API.
   """
@@ -44,9 +50,9 @@ async def get_management_token():
     await session.close()
 
     # Store the token data.
-    print(token_data)
     token = token_data["access_token"]
-    await redis.set("philosopher:token", token)
+    expires_in = token_data["expires_in"]
+    await redis.set("philosopher:token", token, expire=expires_in)
     
   # Return token.
   return token
@@ -58,23 +64,24 @@ def uses_user(func):
   async def inner(request, *args, **kwargs):
     try:
       user_data = await get_user(request.state.user["sub"])
-      return await func(request, *args, user=user_data, **kwargs)
     except AttributeError:
       raise AuthenticationError("Endpoint must require authentication before attempting to access underlying request user.")
+    return await func(request, *args, user=user_data, **kwargs)
   return inner
 
 
-async def get_user(user_id, fields = ["user_id", "username", "nickname", "name"]):
+async def get_user(user_id):
   """Get rich user data by user ID.
   """
 
   token = await get_management_token()
-  fields_string = ",".join(fields)
+  fields_string = ",".join(["user_id", "nickname"])
 
   session = aiohttp.ClientSession(headers={"Authorization": f"Bearer {token}"})
   response = await session.get(f"https://kwot.us.auth0.com/api/v2/users/{user_id}?fields={fields_string}&include_fields=true")
-  user = await response.json()
+  user_data = await response.json()
   await session.close()
+  user = User(user_data["user_id"], user_data["nickname"])
 
   return user
 
@@ -129,7 +136,7 @@ def requires_auth(func):
   """Decorator that prepends auth functionality to an endpoint.
   """
 
-  async def inner(request):
+  async def inner(request, *args, **kwargs):
     """Auth wrapper
     """
 
@@ -208,7 +215,7 @@ def requires_auth(func):
     request.state.user = user
 
     # Run the underlying endpoint.
-    return await func(request)
+    return await func(request, *args, **kwargs)
   
   # Return the wrapped endpoint.
   return inner

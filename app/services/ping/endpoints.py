@@ -3,9 +3,11 @@ from starlette.responses import JSONResponse
 from app.utils.auth import requires_auth, uses_user
 from app.utils.redis import uses_redis
 
+
 @uses_redis
+@requires_auth
 @uses_user
-async def handler(request, redis, user):
+async def ping(request, redis, user):
   """Ping endpoint
   """
 
