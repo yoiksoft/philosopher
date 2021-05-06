@@ -1,16 +1,17 @@
 from aioredis import Redis
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+from tortoise.exceptions import ValidationError
 
 from app.utils.auth import requires_auth, uses_user, User
 from app.utils.redis import uses_redis
-from app.services.quotes.models import Quote
+from app.services.quotes.models import Quote, Meaning
 
 
 @uses_redis
 @requires_auth
 @uses_user
-async def get_all(request: Request, redis: Redis, user: User):
+async def get_all_quotes(request: Request, redis: Redis, user: User):
   """Get all quotes.
   """
 
@@ -37,7 +38,7 @@ async def get_all(request: Request, redis: Redis, user: User):
 
 
 @requires_auth
-async def get_one(request: Request):
+async def get_one_quote(request: Request):
   """Get a specific quote.
   """
 
@@ -57,7 +58,7 @@ async def get_one(request: Request):
 
 @requires_auth
 @uses_user
-async def create(request: Request, user: User):
+async def create_quote(request: Request, user: User):
   """Create a new quote.
   """
 
@@ -70,9 +71,97 @@ async def create(request: Request, user: User):
   
   body = request_body["body"]
 
-  quote = await Quote.create(body=body, author_id=user.user_id)
+  try:
+    quote = await Quote.create(body=body, author_id=user.user_id)
+  except ValidationError as e:
+    return JSONResponse({
+      "message": "Invalid body failed validation.",
+      "data": str(e)
+    })
 
   return JSONResponse({
     "message": "Success",
     "data": await quote.to_dict()
+  }, status_code=201)
+
+
+@requires_auth
+@uses_user
+async def get_all_meanings(request: Request, user: User):
+  """Get all meanings for a quote.
+  """
+
+  quote_id = request.path_params["quote_id"]
+
+  quote: Quote = await Quote.filter(id=quote_id).first()
+
+  if not quote:
+    return JSONResponse({
+      "message": "Quote does not exist"
+    }, status_code=404)
+  
+  if quote.author_id != user.user_id:
+    return JSONResponse({
+      "message": "Only the author is permitted to see meanings for this quote"
+    }, status_code=403)
+  
+  meanings = await Meaning.filter(quote=quote)
+
+  return JSONResponse({
+    "message": "Success",
+    "data": [(await meaning.to_dict()) for meaning in meanings]
+  }, status_code=200)
+
+
+@requires_auth
+@uses_user
+async def create_meaning(request: Request, user: User):
+  """Create a new meaning for a quote.
+  """
+
+  quote_id = request.path_params["quote_id"]
+
+  quote: Quote = await Quote.filter(id=quote_id).first()
+
+  if not quote:
+    return JSONResponse({
+      "message": "Quote does not exist."
+    }, status_code=404)
+  
+  if quote.author_id == user.user_id:
+    return JSONResponse({
+      "message": "You cannot write meanings for your own quote."
+    }, status_code=403)
+  
+  existing: Meaning = await Meaning.filter(author_id=user.user_id, quote=quote).first()
+
+  if existing:
+    return JSONResponse({
+      "message": "You have already submitted a meaning for this quote"
+    }, status_code=403)
+  
+  try:
+    request_body = await request.json()
+  except:
+    return JSONResponse({
+      "message": "Missing request body."
+    }, status_code=400)
+  
+  body = request_body["body"]
+
+  try:
+    meaning = await Meaning.create(
+      body=body,
+      author_id=user.user_id,
+      quote=quote
+    )
+  except ValidationError as e:
+    return JSONResponse({
+      "message": "Invalid body failed validation.",
+      "data": str(e)
+    })
+
+  return JSONResponse({
+    "message": "Success.",
+    "data": await meaning.to_dict()
   }, status_code=201)
