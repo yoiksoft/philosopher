@@ -24,7 +24,9 @@ async def lifespan(app):
   db_url = config("DATABASE_URL")
   await Tortoise.init(
     db_url=db_url,
-    modules={"models": ["app.models"]}
+    modules={"models": [
+      "app.services.quotes.models"
+    ]}
   )
   await Tortoise.generate_schemas()
 
