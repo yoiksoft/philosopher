@@ -20,6 +20,12 @@ class User:
   def __init__(self, user_id, nickname):
     self.user_id = user_id
     self.nickname = nickname
+  
+  def to_dict(self):
+    return {
+      "user_id": self.user_id,
+      "nickname": self.nickname
+    }
 
 
 async def get_management_token():
