@@ -146,8 +146,8 @@ def requires_auth(func):
     # Return an error if there is no Authorization header.
     if not header:
       return JSONResponse({
-        "message": "Malformed Authorization header."
-      }, status_code=400)
+        "message": "Missing Authorization header."
+      }, status_code=401)
 
     # Return an error if the token is not of Bearer type.
     if not header.startswith("Bearer "):
@@ -165,7 +165,7 @@ def requires_auth(func):
       unverified_header = jwt.get_unverified_header(token)
     except exceptions.JWTError:
       return JSONResponse({
-        "message": "Error decoding token headers"
+        "message": "Error decoding authorization token headers"
       }, status_code=400)
 
     # For every key that our issuer has signed with previously...
@@ -181,7 +181,7 @@ def requires_auth(func):
       if not rsa_key:
         # Return an error.
         return JSONResponse({
-          "message": "Invalid Token."
+          "message": "Invalid authorization token."
         }, status_code=401)
 
     # Attempt to validate and parse out user data from the token.
@@ -198,17 +198,17 @@ def requires_auth(func):
     except jwt.ExpiredSignatureError:
       # Return error if the token expired.
       return JSONResponse({
-        "message": "Token is expired"
+        "message": "Authorization token is expired"
       }, status_code=401)
     except jwt.JWTClaimsError:
       # Return error if the claims are missing or invalid.
       return JSONResponse({
-        "message": "Incorrect claims in token"
+        "message": "Incorrect claims in authorization token"
       }, status_code=401)
     except Exception:
       # Return error if anything else went wrong.
       return JSONResponse({
-        "Unable to parse authentication token."
+        "Unable to parse authorization token."
       }, status_code=401)
 
     # Bind the user to the request state.
