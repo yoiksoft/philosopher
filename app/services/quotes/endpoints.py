@@ -12,34 +12,34 @@ from app.services.quotes.models import Quote, Meaning
 @requires_auth
 @uses_user
 async def get_all_quotes(request: Request, redis: Redis, user: User):
-  """Get all quotes.
+  """Get all Quotes.
   """
 
   try:
     user_id = request.query_params["user_id"]
   except KeyError:
     return JSONResponse({
-      "message": "Missing required query parameter 'user_id'"
+      "message": "Missing required query parameter."
     }, status_code=400)
 
   friends = await redis.sismember(f"friends:{user.user_id}", user_id)
 
   if not friends and user.user_id != user_id:
     return JSONResponse({
-      "message": "You are not friends with this user"
+      "message": "You are not friends with this user."
     }, status_code=403)
 
   quotes = await Quote.filter(author_id=user_id)
 
   return JSONResponse({
-    "message": "Success",
+    "message": "Success.",
     "data": [(await quote.to_dict()) for quote in quotes]
   }, status_code=200)
 
 
 @requires_auth
 async def get_one_quote(request: Request):
-  """Get a specific quote.
+  """Get a specific Quote.
   """
 
   qid = request.path_params["quote_id"]
@@ -47,11 +47,11 @@ async def get_one_quote(request: Request):
 
   if not quote:
     return JSONResponse({
-      "message": "Not found"
+      "message": "Not found."
     }, status_code=404)
   
   return JSONResponse({
-    "message": "Success",
+    "message": "Success.",
     "data": await quote.to_dict()
   }, status_code=200)
 
@@ -59,7 +59,7 @@ async def get_one_quote(request: Request):
 @requires_auth
 @uses_user
 async def create_quote(request: Request, user: User):
-  """Create a new quote.
+  """Create a new Quote.
   """
 
   try:
@@ -69,7 +69,12 @@ async def create_quote(request: Request, user: User):
       "message": "Missing request body."
     }, status_code=400)
   
-  body = request_body["body"]
+  try:
+    body = request_body["body"]
+  except KeyError:
+    return JSONResponse({
+      "message": "Missing body field in request body."
+    }, status_code=400)
 
   try:
     quote = await Quote.create(body=body, author_id=user.user_id)
@@ -77,10 +82,10 @@ async def create_quote(request: Request, user: User):
     return JSONResponse({
       "message": "Invalid body failed validation.",
       "data": str(e)
-    })
+    }, status_code=400)
 
   return JSONResponse({
-    "message": "Success",
+    "message": "Success.",
     "data": await quote.to_dict()
   }, status_code=201)
 
@@ -88,7 +93,7 @@ async def create_quote(request: Request, user: User):
 @requires_auth
 @uses_user
 async def get_all_meanings(request: Request, user: User):
-  """Get all meanings for a quote.
+  """Get all Meanings for a Quote.
   """
 
   quote_id = request.path_params["quote_id"]
@@ -97,18 +102,18 @@ async def get_all_meanings(request: Request, user: User):
 
   if not quote:
     return JSONResponse({
-      "message": "Quote does not exist"
+      "message": "Quote does not exist."
     }, status_code=404)
   
   if quote.author_id != user.user_id:
     return JSONResponse({
-      "message": "Only the author is permitted to see meanings for this quote"
+      "message": "Only the author is permitted to see Meanings for this Quote."
     }, status_code=403)
   
   meanings = await Meaning.filter(quote=quote)
 
   return JSONResponse({
-    "message": "Success",
+    "message": "Success.",
     "data": [(await meaning.to_dict()) for meaning in meanings]
   }, status_code=200)
 
@@ -116,7 +121,7 @@ async def get_all_meanings(request: Request, user: User):
 @requires_auth
 @uses_user
 async def create_meaning(request: Request, user: User):
-  """Create a new meaning for a quote.
+  """Create a new Meaning for a Quote.
   """
 
   quote_id = request.path_params["quote_id"]
@@ -130,14 +135,14 @@ async def create_meaning(request: Request, user: User):
   
   if quote.author_id == user.user_id:
     return JSONResponse({
-      "message": "You cannot write meanings for your own quote."
+      "message": "You cannot write Meanings for your own Quote."
     }, status_code=403)
   
   existing: Meaning = await Meaning.filter(author_id=user.user_id, quote=quote).first()
 
   if existing:
     return JSONResponse({
-      "message": "You have already submitted a meaning for this quote"
+      "message": "You have already submitted a Meaning for this Quote."
     }, status_code=403)
   
   try:
@@ -147,7 +152,12 @@ async def create_meaning(request: Request, user: User):
       "message": "Missing request body."
     }, status_code=400)
   
-  body = request_body["body"]
+  try:
+    body = request_body["body"]
+  except KeyError:
+    return JSONResponse({
+      "message": "Missing body field in request body."
+    }, status_code=400)
 
   try:
     meaning = await Meaning.create(
@@ -159,7 +169,7 @@ async def create_meaning(request: Request, user: User):
     return JSONResponse({
       "message": "Invalid body failed validation.",
       "data": str(e)
-    })
+    }, status_code=400)
 
   return JSONResponse({
     "message": "Success.",
