@@ -182,7 +182,7 @@ async def create_request(request: Request, user: User):
     }, status_code=400)
   
   # If the person requesting has recieved a request from the recipient...
-  did_request = await dau.has_requested(requester_id, recipient_id)
+  did_request = await dau.has_requested(recipient_id, requester_id)
   if did_request:
     # Make friends.
     await dau.make_friends(requester_id, recipient_id)
