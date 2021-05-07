@@ -27,7 +27,7 @@ class Redis(Singleton):
 
     if not self.connection:
       try:
-        self.connection = await aioredis.create_redis_pool(url, encoding="utf-8")
+        self.connection: aioredis.Redis = await aioredis.create_redis_pool(url, encoding="utf-8")
       except:
         raise CreateRedisError
 
