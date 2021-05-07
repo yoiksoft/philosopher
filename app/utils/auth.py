@@ -17,14 +17,16 @@ class AuthenticationError(Exception):
 
 
 class User:
-  def __init__(self, user_id, nickname):
+  def __init__(self, user_id, nickname, picture):
     self.user_id = user_id
     self.nickname = nickname
+    self.picture = picture
   
   def to_dict(self):
     return {
       "user_id": self.user_id,
-      "nickname": self.nickname
+      "nickname": self.nickname,
+      "picture": self.picture
     }
 
 
@@ -80,15 +82,26 @@ async def get_user(user_id):
   """Get rich user data by user ID.
   """
 
-  token = await get_management_token()
-  fields_string = ",".join(["user_id", "nickname"])
+  redis = Redis().connection
 
-  session = aiohttp.ClientSession(headers={"Authorization": f"Bearer {token}"})
-  response = await session.get(f"https://kwot.us.auth0.com/api/v2/users/{user_id}?fields={fields_string}&include_fields=true")
-  user_data = await response.json()
-  await session.close()
-  user = User(user_data["user_id"], user_data["nickname"])
+  # Fetch user data from cache.
+  user_data = await redis.hgetall(f"userdata:{user_id}")
 
+  # Fetch fresh data if we don't have any in cache.
+  if not user_data:
+    token = await get_management_token()
+    fields_string = ",".join(["user_id", "nickname", "picture"])
+
+    session = aiohttp.ClientSession(headers={"Authorization": f"Bearer {token}"})
+    response = await session.get(f"https://kwot.us.auth0.com/api/v2/users/{user_id}?fields={fields_string}&include_fields=true")
+    user_data = await response.json()
+    await session.close()
+
+    # Cache user profile data for 10 minutes.
+    await redis.hmset_dict(f"userdata:{user_id}", user_data)
+    await redis.expire(f"userdata:{user_id}", 600)
+
+  user = User(user_data["user_id"], user_data["nickname"], user_data["picture"])
   return user
 
 
