@@ -17,6 +17,10 @@ ROUTES = [
     endpoint=endpoints.get_one_quote,
     methods=["GET"]),
   Route(
+    "/{quote_id:int}",
+    endpoint=endpoints.disown_quote,
+    methods=["DELETE"]),
+  Route(
     "/{quote_id:int}/meanings",
     endpoint=endpoints.get_all_meanings,
     methods=["GET"]),
