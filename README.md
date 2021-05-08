@@ -8,6 +8,7 @@ You must be authorized to access all endpoints. More information on authorizatio
 
 - [Quotes and Meanings](#quotes-and-meanings)
 - [Friends and friend requests](#friends-and-friend-requests)
+- [Today functionality](#today-functionality)
 
 
 
@@ -489,3 +490,9 @@ Remove a request to be friends. Only the recipient of the request can query this
   "message": "Success."
 }
 ```
+
+
+
+### Today functionality
+
+The today service of the API allows users to retrieve Quotes to vote on, to submit votes, to submit their own Quotes for Quote of the Day, and to view the Quote of the Day through history. Documentation will be available soon.
