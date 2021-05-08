@@ -3,6 +3,7 @@ from tortoise import Tortoise
 
 from app.utils import config
 from app.utils.redis import Redis
+from app.utils.db import TORTOISE_ORM
 
 
 async def lifespan(app):
@@ -21,14 +22,7 @@ async def lifespan(app):
   await redis.initialize(url=url)
 
   # Create the database connection.
-  db_url = config("DATABASE_URL")
-  await Tortoise.init(
-    db_url=db_url,
-    modules={"models": [
-      "app.services.quotes.models"
-    ]}
-  )
-  await Tortoise.generate_schemas()
+  await Tortoise.init(config=TORTOISE_ORM)
 
   # Yield as the app runs.
   yield
@@ -36,3 +30,6 @@ async def lifespan(app):
   # Close the Redis connection once the app is shutting down.
   redis.connection.close()
   await redis.connection.wait_closed()
+  
+  # Close the Tortoise connection.
+  await Tortoise.close_connections()

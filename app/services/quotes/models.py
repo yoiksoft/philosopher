@@ -10,7 +10,7 @@ class Quote(Model):
 
   id = fields.IntField(pk=True)
   body = fields.CharField(max_length=140)
-  author_id = fields.CharField(max_length=40)
+  author_id = fields.CharField(max_length=40, null=True)
   published = fields.DatetimeField(auto_now_add=True)
 
   meanings: fields.ReverseRelation["Event"]
@@ -38,7 +38,7 @@ class Meaning(Model):
 
   id = fields.IntField(pk=True)
   body = fields.CharField(max_length=240)
-  author_id = fields.CharField(max_length=40)
+  author_id = fields.CharField(max_length=40, null=True)
   quote: fields.ForeignKeyRelation[Quote] = fields.ForeignKeyField(
     model_name="models.Quote",
     related_name="meanings",

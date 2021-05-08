@@ -5,6 +5,9 @@ name = "pypi"
 
 [scripts]
 server = "uvicorn app:app --reload"
+init-db = "aerich init-db"
+makemigrations = "aerich migrate"
+migrate = "aerich upgrade"
 
 [packages]
 starlette = "~=0.14.2"
@@ -16,6 +19,7 @@ python-jose = "~=3.2.0"
 tortoise-orm = {extras = ["accel", "asyncpg"], version = "~=0.17.2"}
 
 [dev-packages]
+aerich = "*"
 
 [requires]
 python_version = "3.9"
