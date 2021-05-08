@@ -1,0 +1,107 @@
+name: Deploy to v1
+
+# Run this workflow on any major version 1 release.
+on:
+  push:
+    tags:
+    - "v1.[0-9]+.[0-9]+"
+
+# Workflow-wide environment variables.
+env:
+  # Resource identifier that effectively differentiates environments.
+  # In this case, we're dealing with the major version 1 environment.
+  YOIK_RESOURCE_ID: "v1"
+
+jobs:
+  build:
+    # Run on latest ubuntu runner.
+    runs-on: ubuntu-latest 
+
+    steps:
+      # Checkout the repository.
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+      # Setup Python 3.9
+    - name: Setup Python 3.9
+      uses: actions/setup-python@v1
+      with:
+        python-version: "3.9"
+
+      # Setup Kubernetes CLI with DigitalOcean.
+    - name: Setup Kubernetes CLI
+      uses: matootie/dokube@v1.3.4
+      with:
+        personalAccessToken: ${{ secrets.DIGITALOCEAN_TOKEN }}
+        clusterName: "kwot"
+        # Match server version.
+        version: "1.20.2"
+        # Give our workflow up to 15 minutes to run.
+        expirationTime: "900"
+
+      # Parse out the version number from the tag ref.
+    - name: Parse version number
+      id: gv
+      run: echo "::set-output name=version::${GITHUB_REF##*/}"
+    
+      # Initialize a new GitHub Deployment status.
+    - name: Set GitHub Deployment status
+      uses: bobheadxi/deployments@master
+      id: dg
+      with:
+        step: start
+        token: ${{ github.token }}
+        desc: "Major version 1 release of the Philosopher API."
+        env: Version 1
+      if: always()
+    
+      # Generate requirements.txt
+    - name: Generate pip requirements
+      run: |
+        python -m pip install --upgrade pipenv
+        python -m pipenv lock -r > $GITHUB_WORKSPACE/requirements.txt
+
+      # Build and publish the app as a Docker image to GitHub Container Registry.
+    - name: Build and publish Docker image
+      id: pi
+      uses: matootie/github-docker@v3.1.0
+      with:
+        accessToken: ${{ secrets.PAT }}
+        # The app is called philosopher.
+        imageName: philosopher
+        # Here we specify the image tag as the version from the tag ref.
+        tag: ${{ steps.gv.outputs.version }}
+        # We're using the container registry and not the package registry.
+        containerRegistry: true
+
+      # Inject any variables into the Kubernetes resource template.
+    - name: Parse Kubernetes resource template with relevant data
+      env:
+        # Add an environment variable for the image link.
+        YOIK_RESOURCE_IMAGE: ${{ steps.pi.outputs.imageURL }}:${{ steps.gv.outputs.version }}
+      # Injects variables and outputs to .dist/deploy.yml.
+      run: |
+        echo Preparing output directory...
+        mkdir $GITHUB_WORKSPACE/.dist
+        echo Replacing resource variables...
+        cat $GITHUB_WORKSPACE/manifests/philosopher.yml | envsubst > $GITHUB_WORKSPACE/.dist/deploy.yml
+
+      # Apply the changes to the cluster.
+    - name: Deploy changes
+      # Apply changes and then wait up to 5 minutes for the changes to be rolled out.
+      run: |
+        echo Deploying changes to Kubernetes...
+        kubectl apply -f $GITHUB_WORKSPACE/.dist/deploy.yml
+        echo Waiting for changes...
+        kubectl rollout status deployment/philosopher-$YOIK_RESOURCE_ID -w --timeout=5m
+
+      # Update the GitHub Deployment status to reflect the job status.
+    - name: Update GitHub Deployment status
+      uses: bobheadxi/deployments@master
+      with:
+        step: finish
+        token: ${{ github.token }}
+        status: ${{ job.status }}
+        deployment_id: ${{ steps.dg.outputs.deployment_id }}
+        env_url: https://philosopher.yoik.software/${{ env.YOIK_RESOURCE_ID }}
+      if: always()
