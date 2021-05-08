@@ -60,7 +60,13 @@ async def accept_request(request: Request, user: User):
     return JSONResponse({
       "message": "Missing request body."
     }, status_code=400)
-  requester_id = request_body["request_id"]
+
+  try:
+    requester_id = request_body["request_id"]
+  except KeyError:
+    return JSONResponse({
+      "message": "Missing value for request_id in request body."
+    }, status_code=400)
 
   # Ensure they're not the same.
   if user_id == requester_id:
@@ -171,7 +177,7 @@ async def create_request(request: Request, user: User):
   # Error if trying to friend self.
   if requester_id == recipient_id:
     return JSONResponse({
-      "message": "You cannot create a request to yourself"
+      "message": "You cannot create a request to yourself."
     }, status_code=400)
   
   # Check that the users aren't already friends.
