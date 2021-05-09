@@ -19,9 +19,10 @@ async def get_friends(request: Request, user: User):
   # Error if the requester is not friends with the specified user.
   are_friends = await dau.are_friends(user_id, user.user_id)
   if not are_friends and user_id != user.user_id:
-    return JSONResponse({
-      "message": "You are not friends with this user."
-    }, status_code=403)
+    return JSONResponse(
+      {"message": "You are not friends with this user."},
+      status_code=403,
+    )
 
   # Get friends.
   friends_ids = await dau.get_friends(user_id)
@@ -30,10 +31,13 @@ async def get_friends(request: Request, user: User):
     friend = await get_user(friend_id)
     friends.append(friend.to_dict())
 
-  return JSONResponse({
-    "message": f"Success.",
-    "data": friends
-  }, status_code=200)
+  return JSONResponse(
+    {
+      "message": f"Success.",
+      "data": friends
+    },
+    status_code=200,
+  )
 
 
 @requires_auth
@@ -49,44 +53,50 @@ async def accept_request(request: Request, user: User):
 
   # Error if not user.
   if user.user_id != user_id:
-    return JSONResponse({
-      "message": "You are not allowed to perform this action."
-    }, status_code=403)
+    return JSONResponse(
+      {"message": "You are not allowed to perform this action."},
+      status_code=403,
+    )
 
   # Get requester from body.
   try:
     request_body = await request.json()
   except:
-    return JSONResponse({
-      "message": "Missing request body."
-    }, status_code=400)
+    return JSONResponse(
+      {"message": "Missing request body."},
+      status_code=400,
+    )
 
   try:
     requester_id = request_body["request_id"]
   except KeyError:
-    return JSONResponse({
-      "message": "Missing value for request_id in request body."
-    }, status_code=400)
+    return JSONResponse(
+      {"message": "Missing value for request_id in request body."},
+      status_code=400,
+    )
 
   # Ensure they're not the same.
   if user_id == requester_id:
-    return JSONResponse({
-      "message": "You cannot be friends with yourself."
-    }, status_code=400)
+    return JSONResponse(
+      {"message": "You cannot be friends with yourself."},
+      status_code=400,
+    )
 
   # Verify that the specified user has made a request.
   did_request = await dau.has_requested(requester_id, user.user_id)
   if not did_request:
-    return JSONResponse({
-      "message": "The specified user has not sent you a friend request."
-    }, status_code=400)
-  
+    return JSONResponse(
+      {"message": "The specified user has not sent you a friend request."},
+      status_code=400,
+    )
+
   # Make friends.
   await dau.make_friends(requester_id, user.user_id)
 
-  return JSONResponse({
-    "message": "Success."
-  }, status_code=200)
+  return JSONResponse(
+    {"message": "Success."},
+    status_code=200,
+  )
 
 
 @requires_auth
@@ -102,26 +112,29 @@ async def remove_friend(request: Request, user: User):
 
   # Error if not user.
   if user.user_id != user_id:
-    return JSONResponse({
-      "message": "You are not allowed to perform this action."
-    }, status_code=403)
-  
+    return JSONResponse(
+      {"message": "You are not allowed to perform this action."},
+      status_code=403,
+    )
+
   # Get the friend ID to remove.
   friend_id = request.path_params["friend_id"]
 
   # Verify that they are in fact friends.
   is_friend = await dau.are_friends(user_id, friend_id)
   if not is_friend:
-    return JSONResponse({
-      "message": "The specified user is not your friend."
-    }, status_code=400)
-  
+    return JSONResponse(
+      {"message": "The specified user is not your friend."},
+      status_code=400,
+    )
+
   # Remove friends.
   await dau.remove_friends(user_id, friend_id)
 
-  return JSONResponse({
-    "message": "Success."
-  }, status_code=200)
+  return JSONResponse(
+    {"message": "Success."},
+    status_code=200,
+  )
 
 
 @requires_auth
@@ -137,9 +150,10 @@ async def get_requests(request: Request, user: User):
 
   # Error if not user.
   if user.user_id != user_id:
-    return JSONResponse({
-      "message": "You are not allowed to view this users requests."
-    }, status_code=403)
+    return JSONResponse(
+      {"message": "You are not allowed to view this users requests."},
+      status_code=403,
+    )
 
   # Get requests.
   requester_ids = await dau.get_requests(user_id)
@@ -148,10 +162,13 @@ async def get_requests(request: Request, user: User):
     requester = await get_user(requester_id)
     requesters.append(requester.to_dict())
 
-  return JSONResponse({
-    "message": f"Success.",
-    "data": requesters
-  }, status_code=200)
+  return JSONResponse(
+    {
+      "message": f"Success.",
+      "data": requesters
+    },
+    status_code=200,
+  )
 
 
 @requires_auth
@@ -167,42 +184,47 @@ async def create_request(request: Request, user: User):
 
   # Error if not user.
   if user.user_id != requester_id:
-    return JSONResponse({
-      "message": "You cannot send a friend request on someone elses behalf."
-    }, status_code=403)
+    return JSONResponse(
+      {"message": "You cannot send a friend request on someone elses behalf."},
+      status_code=403,
+    )
 
   # Get recipient ID.
   recipient_id = request.path_params["user_id"]
 
   # Error if trying to friend self.
   if requester_id == recipient_id:
-    return JSONResponse({
-      "message": "You cannot create a request to yourself."
-    }, status_code=400)
-  
+    return JSONResponse(
+      {"message": "You cannot create a request to yourself."},
+      status_code=400,
+    )
+
   # Check that the users aren't already friends.
   are_friends = await dau.are_friends(requester_id, recipient_id)
   if are_friends:
-    return JSONResponse({
-      "message": "You are already friends."
-    }, status_code=400)
-  
+    return JSONResponse(
+      {"message": "You are already friends."},
+      status_code=400,
+    )
+
   # If the person requesting has recieved a request from the recipient...
   did_request = await dau.has_requested(recipient_id, requester_id)
   if did_request:
     # Make friends.
     await dau.make_friends(requester_id, recipient_id)
 
-    return JSONResponse({
-      "message": "Both have requested and thus are now friends."
-    }, status_code=201)
-  
+    return JSONResponse(
+      {"message": "Both have requested and thus are now friends."},
+      status_code=201,
+    )
+
   # Otherwire, make request.
   await dau.make_request(requester_id, recipient_id)
 
-  return JSONResponse({
-    "message": "Success."
-  }, status_code=200)
+  return JSONResponse(
+    {"message": "Success."},
+    status_code=200,
+  )
 
 
 @requires_auth
@@ -214,13 +236,17 @@ async def delete_request(request: Request, user: User):
   """
 
   # Get the user ID.
-  user_id = request.path_params["user_id"]  
+  user_id = request.path_params["user_id"]
 
   # Error if not user.
   if user.user_id != user_id:
-    return JSONResponse({
-      "message": "You cannot decline a friend request on someone elses behalf."
-    }, status_code=403)
+    return JSONResponse(
+      {
+        "message":
+          "You cannot decline a friend request on someone elses behalf."
+      },
+      status_code=403,
+    )
 
   # Get the requester ID.
   requester_id = request.path_params["request_id"]
@@ -228,12 +254,14 @@ async def delete_request(request: Request, user: User):
   # Verify that the user has requested.
   has_requested = await dau.has_requested(requester_id, user_id)
   if not has_requested:
-    return JSONResponse({
-      "message": "You do not have a friend request from this user."
-    }, status_code=400)
-  
+    return JSONResponse(
+      {"message": "You do not have a friend request from this user."},
+      status_code=400,
+    )
+
   await dau.remove_request(requester_id, user_id)
 
-  return JSONResponse({
-    "message": "Success."
-  }, status_code=200)
+  return JSONResponse(
+    {"message": "Success."},
+    status_code=200,
+  )

@@ -30,6 +30,6 @@ async def lifespan(app):
   # Close the Redis connection once the app is shutting down.
   redis.connection.close()
   await redis.connection.wait_closed()
-  
+
   # Close the Tortoise connection.
   await Tortoise.close_connections()

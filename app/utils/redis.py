@@ -27,7 +27,8 @@ class Redis(Singleton):
 
     if not self.connection:
       try:
-        self.connection: aioredis.Redis = await aioredis.create_redis_pool(url, encoding="utf-8")
+        self.connection: aioredis.Redis = await aioredis.create_redis_pool(
+          url, encoding="utf-8")
       except:
         raise CreateRedisError
 
@@ -42,4 +43,5 @@ def uses_redis(func):
   async def inner(request, *args, **kwargs):
     redis = Redis()
     return await func(request, *args, redis=redis.connection, **kwargs)
+
   return inner

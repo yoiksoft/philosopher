@@ -1,6 +1,5 @@
 from app.utils import config
 
-
 TORTOISE_ORM = {
   'connections': {
     'default': {
@@ -16,10 +15,7 @@ TORTOISE_ORM = {
   },
   'apps': {
     'models': {
-      'models': [
-        'app.services.quotes.models',
-        "aerich.models"
-      ],
+      'models': ['app.services.quotes.models', "aerich.models"],
       'default_connection': 'default',
     }
   },

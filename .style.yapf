@@ -1,0 +1,5 @@
+[style]
+based_on_style = yapf
+COLUMN_LIMIT = 80
+CONTINUATION_INDENT_WIDTH = 2
+INDENT_WIDTH = 2

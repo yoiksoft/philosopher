@@ -34,7 +34,7 @@ async def make_friends(a: str, b: str) -> None:
   """
 
   redis: Redis = RedisPool().connection
-  
+
   await redis.srem(f"requests:{a}", b)
   await redis.srem(f"requests:{b}", a)
   await redis.sadd(f"friends:{a}", b)
@@ -88,7 +88,7 @@ async def get_friends(user: str) -> typing.List[str]:
   while cursor != 0:
     cursor, data = await redis.sscan(f"friends:{user}", cursor=cursor)
     friends.extend(data)
-  
+
   return friends
 
 
@@ -103,5 +103,5 @@ async def get_requests(user: str) -> typing.List[str]:
   while cursor != 0:
     cursor, data = await redis.sscan(f"requests:{user}", cursor=cursor)
     requests.extend(data)
-  
+
   return requests

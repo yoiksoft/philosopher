@@ -19,7 +19,7 @@ class Quote(Model):
     return {
       "id": self.id,
       "body": self.body,
-      "published": str(self.published)
+      "published": str(self.published),
     }
 
   async def get_author(self):
@@ -27,7 +27,7 @@ class Quote(Model):
     """
 
     return await get_user(self.author_id)
-  
+
   class Meta:
     ordering = ["-published"]
 
@@ -40,16 +40,14 @@ class Meaning(Model):
   body = fields.CharField(max_length=240)
   author_id = fields.CharField(max_length=40, null=True)
   quote: fields.ForeignKeyRelation[Quote] = fields.ForeignKeyField(
-    model_name="models.Quote",
-    related_name="meanings",
-    on_delete="CASCADE")
+    model_name="models.Quote", related_name="meanings", on_delete="CASCADE")
   published = fields.DatetimeField(auto_now_add=True)
 
   async def to_dict(self):
     return {
       "id": self.id,
       "body": self.body,
-      "published": str(self.published)
+      "published": str(self.published),
     }
 
   async def get_author(self):
@@ -57,7 +55,6 @@ class Meaning(Model):
     """
 
     return await get_user(self.author_id)
-  
+
   class Meta:
     ordering = ["-published"]
-

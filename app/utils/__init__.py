@@ -5,7 +5,6 @@ Functions and classes to help the application.
 
 from starlette.config import Config
 
-
 # Starlette helper class to load configurations from an environment file.
 config: Config = Config(".env")
 

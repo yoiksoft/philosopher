@@ -17,7 +17,10 @@ async def ping(request: Request, redis: Redis, user: User) -> JSONResponse:
   response = await redis.ping()
 
   # Return the response.
-  return JSONResponse({
-    "message": f'{response}',
-    "user": user.to_dict()
-  }, status_code=200)
+  return JSONResponse(
+    {
+      "message": f'{response}',
+      "user": user.to_dict()
+    },
+    status_code=200,
+  )

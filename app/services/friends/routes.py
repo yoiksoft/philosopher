@@ -2,30 +2,35 @@ from starlette.routing import Route
 
 from app.services.friends import endpoints
 
-
 ROUTES = [
   Route(
     "/{user_id}/friends",
     endpoint=endpoints.get_friends,
-    methods=["GET"]),
+    methods=["GET"],
+  ),
   Route(
     "/{user_id}/friends",
     endpoint=endpoints.accept_request,
-    methods=["POST"]),
+    methods=["POST"],
+  ),
   Route(
     "/{user_id}/friends/{friend_id}",
     endpoint=endpoints.remove_friend,
-    methods=["DELETE"]),
+    methods=["DELETE"],
+  ),
   Route(
     "/{user_id}/requests",
     endpoint=endpoints.get_requests,
-    methods=["GET"]),
+    methods=["GET"],
+  ),
   Route(
     "/{user_id}/requests/{request_id}",
     endpoint=endpoints.create_request,
-    methods=["PUT"]),
+    methods=["PUT"],
+  ),
   Route(
     "/{user_id}/requests/{request_id}",
     endpoint=endpoints.delete_request,
-    methods=["DELETE"]),
+    methods=["DELETE"],
+  ),
 ]

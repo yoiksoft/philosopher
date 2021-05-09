@@ -1,3 +1,6 @@
+"""Authorization utilities
+"""
+
 import json
 
 import aiohttp
@@ -7,22 +10,28 @@ from starlette.responses import JSONResponse
 from app.utils import config
 from app.utils.redis import Redis
 
-
 __client_id = config("AUTH0_CLIENT_ID")
 __client_secret = config("AUTH0_CLIENT_SECRET")
 
 
 class AuthenticationError(Exception):
-  pass
+  """Basic authentication error to throw.
+  """
 
 
 class User:
+  """User class to represent user data.
+  """
+
   def __init__(self, user_id, nickname, picture):
     self.user_id = user_id
     self.nickname = nickname
     self.picture = picture
-  
+
   def to_dict(self):
+    """Serialize the object to dictionary format.
+    """
+
     return {
       "user_id": self.user_id,
       "nickname": self.nickname,
@@ -42,18 +51,16 @@ async def get_management_token():
   if not token:
 
     # Send the request for a new token.
-    session = aiohttp.ClientSession(headers={
-      "Content-Type": "application/json"
-    })
+    session = aiohttp.ClientSession(
+      headers={"Content-Type": "application/json"})
     response = await session.post(
-      f"https://kwot.us.auth0.com/oauth/token",
+      "https://kwot.us.auth0.com/oauth/token",
       data=json.dumps({
         "client_id": __client_id,
         "client_secret": __client_secret,
         "audience": "https://kwot.us.auth0.com/api/v2/",
         "grant_type": "client_credentials"
-      })
-    )
+      }))
     token_data = await response.json()
     await session.close()
 
@@ -61,7 +68,7 @@ async def get_management_token():
     token = token_data["access_token"]
     expires_in = token_data["expires_in"]
     await redis.set("philosopher:token", token, expire=expires_in)
-    
+
   # Return token.
   return token
 
@@ -69,12 +76,16 @@ async def get_management_token():
 def uses_user(func):
   """Wrapper that sends off rich user data to the underlying endpoint.
   """
+
   async def inner(request, *args, **kwargs):
     try:
       user_data = await get_user(request.state.user["sub"])
     except AttributeError:
-      raise AuthenticationError("Endpoint must require authentication before attempting to access underlying request user.")
+      raise AuthenticationError(
+        "Endpoint must require authentication before attempting to access underlying request user."
+      )
     return await func(request, *args, user=user_data, **kwargs)
+
   return inner
 
 
@@ -92,8 +103,11 @@ async def get_user(user_id):
     token = await get_management_token()
     fields_string = ",".join(["user_id", "nickname", "picture"])
 
-    session = aiohttp.ClientSession(headers={"Authorization": f"Bearer {token}"})
-    response = await session.get(f"https://kwot.us.auth0.com/api/v2/users/{user_id}?fields={fields_string}&include_fields=true")
+    session = aiohttp.ClientSession(
+      headers={"Authorization": f"Bearer {token}"})
+    response = await session.get(
+      f"https://kwot.us.auth0.com/api/v2/users/{user_id}?fields={fields_string}&include_fields=true"
+    )
     user_data = await response.json()
     await session.close()
 
@@ -121,7 +135,7 @@ def find_matching_key(kid, keys):
         "n": key["n"],
         "e": key["e"]
       }
-  
+
   return rsa_key
 
 
@@ -142,7 +156,8 @@ async def get_keys(from_cache=True):
   else:
     # Get a fresh set of keys.
     session = aiohttp.ClientSession()
-    response = await session.get("https://kwot.us.auth0.com/.well-known/jwks.json")
+    response = await session.get(
+      "https://kwot.us.auth0.com/.well-known/jwks.json")
     jwks = await response.json()
     await session.close()
     # Cache the keys for maximum one day.
@@ -164,28 +179,31 @@ def requires_auth(func):
 
     # Return an error if there is no Authorization header.
     if not header:
-      return JSONResponse({
-        "message": "Missing Authorization header."
-      }, status_code=401)
+      return JSONResponse(
+        {"message": "Missing Authorization header."},
+        status_code=401,
+      )
 
     # Return an error if the token is not of Bearer type.
     if not header.startswith("Bearer "):
-      return JSONResponse({
-        "message": "Malformed Authorization header."
-      }, status_code=400)
+      return JSONResponse(
+        {"message": "Malformed Authorization header."},
+        status_code=400,
+      )
 
     token = header[7:]
 
     # Fetch keys from JSON Web Key Set.
     jwks = await get_keys(from_cache=True)
-    
+
     # Get the token header without verifying it.
     try:
       unverified_header = jwt.get_unverified_header(token)
     except exceptions.JWTError:
-      return JSONResponse({
-        "message": "Error decoding authorization token headers"
-      }, status_code=400)
+      return JSONResponse(
+        {"message": "Error decoding authorization token headers"},
+        status_code=400,
+      )
 
     # For every key that our issuer has signed with previously...
     rsa_key = find_matching_key(unverified_header["kid"], jwks["keys"])
@@ -199,9 +217,10 @@ def requires_auth(func):
       # If we still don't have a matching key.
       if not rsa_key:
         # Return an error.
-        return JSONResponse({
-          "message": "Invalid authorization token."
-        }, status_code=401)
+        return JSONResponse(
+          {"message": "Invalid authorization token."},
+          status_code=401,
+        )
 
     # Attempt to validate and parse out user data from the token.
     user = None
@@ -212,29 +231,31 @@ def requires_auth(func):
         rsa_key,
         algorithms=["RS256"],
         audience="philosopher",
-        issuer="https://kwot.us.auth0.com/"
-      )
+        issuer="https://kwot.us.auth0.com/")
     except jwt.ExpiredSignatureError:
       # Return error if the token expired.
-      return JSONResponse({
-        "message": "Authorization token is expired"
-      }, status_code=401)
+      return JSONResponse(
+        {"message": "Authorization token is expired"},
+        status_code=401,
+      )
     except jwt.JWTClaimsError:
       # Return error if the claims are missing or invalid.
-      return JSONResponse({
-        "message": "Incorrect claims in authorization token"
-      }, status_code=401)
+      return JSONResponse(
+        {"message": "Incorrect claims in authorization token"},
+        status_code=401,
+      )
     except Exception:
       # Return error if anything else went wrong.
-      return JSONResponse({
-        "Unable to parse authorization token."
-      }, status_code=401)
+      return JSONResponse(
+        {"Unable to parse authorization token."},
+        status_code=401,
+      )
 
     # Bind the user to the request state.
     request.state.user = user
 
     # Run the underlying endpoint.
     return await func(request, *args, **kwargs)
-  
+
   # Return the wrapped endpoint.
   return inner

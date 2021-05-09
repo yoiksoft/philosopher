@@ -8,7 +8,6 @@ from starlette.applications import Starlette
 from app import settings
 from app import routes
 
-
 # Instantiate the application
 app: Starlette = Starlette(
   debug=settings.DEBUG,

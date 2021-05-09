@@ -8,6 +8,9 @@ server = "uvicorn app:app --reload"
 init-db = "aerich init-db"
 makemigrations = "aerich migrate"
 migrate = "aerich upgrade"
+lint = "pylint --indent-string='  ' app"
+format = "yapf --recursive --in-place app/"
+test = "pytest"
 
 [packages]
 starlette = "~=0.14.2"
@@ -19,7 +22,11 @@ python-jose = "~=3.2.0"
 tortoise-orm = {extras = ["accel", "asyncpg"], version = "~=0.17.2"}
 
 [dev-packages]
-aerich = "*"
+aerich = "~=0.5.3"
+pytest = "~=6.2.4"
+requests = "~=2.25.1"
+pylint = "~=2.8.2"
+yapf = "~=0.31.0"
 
 [requires]
 python_version = "3.9"
