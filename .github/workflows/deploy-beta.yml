@@ -84,7 +84,15 @@ jobs:
         echo Preparing output directory...
         mkdir $GITHUB_WORKSPACE/.dist
         echo Replacing resource variables...
+        cat $GITHUB_WORKSPACE/manifests/migrations.yml | envsubst > $GITHUB_WORKSPACE/.dist/migrate.yml
         cat $GITHUB_WORKSPACE/manifests/philosopher.yml | envsubst > $GITHUB_WORKSPACE/.dist/deploy.yml
+
+    - name: Run migrations
+      run: |
+        echo Running database migrations...
+        kubectl apply -f $GITHUB_WORKSPACE/.dist/migrate.yml
+        echo Waiting for completion...
+        kubectl wait --for=condition=complete --timeout=5m job/philosopher-$YOIK_RESOURCE_ID-migrations
 
       # Apply the changes to the cluster.
     - name: Deploy changes

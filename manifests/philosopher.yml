@@ -52,23 +52,50 @@ spec:
         env:
         - name: DEBUG
           value: "false"
-        - name: DISCORD_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: philosopher-secrets
-              key: discord-token
         - name: REDIS_URL
           valueFrom:
             secretKeyRef:
               name: philosopher-secrets
               key: redis-url
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: philosopher-secrets
+              key: db-host
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: philosopher-secrets
+              key: db-port
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: philosopher-secrets
+              key: db-user
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: philosopher-secrets
+              key: db-password
+        - name: DB_NAME
+          value: philosopher-${YOIK_RESOURCE_ID}
+        - name: AUTH0_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: philosopher-secrets
+              key: auth0-client-id
+        - name: AUTH0_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: philosopher-secrets
+              key: auth0-client-secret
         resources:
           requests:
             cpu: 200m
-            memory: 60Mi
+            memory: 100Mi
           limits:
             cpu: 200m
-            memory: 60Mi
+            memory: 100Mi
         ports:
         - containerPort: 8000
       imagePullSecrets:

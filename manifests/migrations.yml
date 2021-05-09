@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: philosopher-${YOIK_RESOURCE_ID}-migrations
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: ${YOIK_RESOURCE_IMAGE}
+          command: ["/bin/sh", "-c"]
+          args: ["python -m aerich upgrade"]
+          env:
+          - name: DB_HOST
+            valueFrom:
+              secretKeyRef:
+                name: philosopher-secrets
+                key: db-host
+          - name: DB_PORT
+            valueFrom:
+              secretKeyRef:
+                name: philosopher-secrets
+                key: db-port
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: philosopher-secrets
+                key: db-user
+          - name: DB_PASS
+            valueFrom:
+              secretKeyRef:
+                name: philosopher-secrets
+                key: db-password
+          - name: DB_NAME
+            value: philosopher-${YOIK_RESOURCE_ID}
