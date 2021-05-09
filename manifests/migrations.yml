@@ -6,11 +6,13 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      imagePullSecrets:
+      - name: ghcr
       containers:
         - name: app
           image: ${YOIK_RESOURCE_IMAGE}
           command: ["/bin/sh", "-c"]
-          args: ["python -m aerich upgrade"]
+          args: ["pipenv run migrate"]
           env:
           - name: DB_HOST
             valueFrom:
