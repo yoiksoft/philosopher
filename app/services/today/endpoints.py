@@ -3,10 +3,12 @@ from datetime import date
 from aioredis import Redis
 from starlette.routing import Request
 from starlette.responses import JSONResponse, Response
+from starlette.background import BackgroundTask
 
 from app.utils.redis import uses_redis
 from app.utils.auth import requires_auth, uses_user, User
 
+from app.services.today import tools
 from app.services.quotes.models import Quote
 
 
@@ -20,10 +22,24 @@ async def get_quotes(request: Request, redis: Redis, user: User):
   if await redis.exists(f"today:{day}:request:{user.user_id}"):
     result = await redis.sscan(f"today:{day}:request:{user.user_id}")
   else:
+    if await redis.exists(f"today:background:{user.user_id}"):
+      return Response(status_code=204)
+
     result = await redis.srandmember(f"today:{day}:quotes", count=2)
+
     if len(result) < 2:
       return Response(status_code=204)
-    await redis.sadd(f"today:{day}:request:{user.user_id}", *result)
+
+    has_seen_a = await redis.sismember(f"today:{day}:seen:{user.user_id}", result[0])
+    has_seen_b = await redis.sismember(f"today:{day}:seen:{user.user_id}", result[1])
+    if not has_seen_a and not has_seen_b:
+      await redis.sadd(f"today:{day}:request:{user.user_id}", *result)
+      await redis.sadd(f"today:{day}:seen:{user.user_id}", *result)
+    else:
+      # Initiate a background task to get fresh quotes.
+      today = date.today()
+      task = BackgroundTask(tools.fetch_in_background, today, user.user_id)
+      return Response(status_code=204, background=task)
   
   quotes = [await Quote.filter(id=quote_id).first() for quote_id in result]
 
