@@ -29,10 +29,14 @@ async def get_quotes(request: Request, redis: Redis, user: User):
 
     if len(result) < 2:
       return Response(status_code=204)
+    
+    quote_a = await Quote.filter(id=quotes[0]).first()
+    quote_b = await Quote.filter(id=quotes[1]).first()
+    authored = user_id == quote_a.author_id or user_id == quote_b.author_id
 
     has_seen_a = await redis.sismember(f"today:{day}:seen:{user.user_id}", result[0])
     has_seen_b = await redis.sismember(f"today:{day}:seen:{user.user_id}", result[1])
-    if not has_seen_a and not has_seen_b:
+    if not has_seen_a and not has_seen_b and not authored:
       await redis.sadd(f"today:{day}:request:{user.user_id}", *result)
       await redis.sadd(f"today:{day}:seen:{user.user_id}", *result)
     else:
