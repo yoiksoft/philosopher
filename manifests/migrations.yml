@@ -5,6 +5,7 @@ metadata:
 spec:
   template:
     spec:
+      restartPolicy: Never
       containers:
         - name: app
           image: ${YOIK_RESOURCE_IMAGE}
