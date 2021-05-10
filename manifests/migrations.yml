@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: philosopher-${YOIK_RESOURCE_ID}-migrations
+  name: philosopher-${YOIK_RESOURCE_ID}-migrations-${PHILOSOPHER_VERSION}
 spec:
   template:
     spec:
@@ -14,6 +14,13 @@ spec:
           command: ["/bin/sh", "-c"]
           args: ["pipenv run migrate"]
           env:
+          - name: DEBUG
+            value: "false"
+          - name: REDIS_URL
+            valueFrom:
+              secretKeyRef:
+                name: philosopher-secrets
+                key: redis-url
           - name: DB_HOST
             valueFrom:
               secretKeyRef:
@@ -36,3 +43,13 @@ spec:
                 key: db-password
           - name: DB_NAME
             value: philosopher-${YOIK_RESOURCE_ID}
+          - name: AUTH0_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: philosopher-secrets
+                key: auth0-client-id
+          - name: AUTH0_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: philosopher-secrets
+                key: auth0-client-secret

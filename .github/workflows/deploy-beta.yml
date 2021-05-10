@@ -72,6 +72,7 @@ jobs:
     - name: Parse Kubernetes resource template with relevant data
       env:
         # Add an environment variable for the image link.
+        PHILOSOPHER_VERSION: ${{ steps.gv.outputs.version }}
         YOIK_RESOURCE_IMAGE: ${{ steps.pi.outputs.imageURL }}:${{ steps.gv.outputs.version }}
       # Injects variables and outputs to .dist/deploy.yml.
       run: |
@@ -82,11 +83,13 @@ jobs:
         cat $GITHUB_WORKSPACE/manifests/philosopher.yml | envsubst > $GITHUB_WORKSPACE/.dist/deploy.yml
 
     - name: Run migrations
+      env:
+        PHILOSOPHER_VERSION: ${{ steps.gv.outputs.version }}
       run: |
         echo Running database migrations...
         kubectl apply -f $GITHUB_WORKSPACE/.dist/migrate.yml
         echo Waiting for completion...
-        kubectl wait --for=condition=complete --timeout=5m job/philosopher-$YOIK_RESOURCE_ID-migrations
+        kubectl wait --for=condition=complete --timeout=5m job/philosopher-$YOIK_RESOURCE_ID-migrations-$PHILOSOPHER_VERSION
 
       # Apply the changes to the cluster.
     - name: Deploy changes
