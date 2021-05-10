@@ -10,14 +10,12 @@ spec:
       - name: ghcr
       containers:
         - name: app
-          image: ${YOIK_RESOURCE_IMAGE}-dev
+          image: ${YOIK_RESOURCE_IMAGE}
           command: ["/bin/sh", "-c"]
           args: ["aerich upgrade"]
           env:
           - name: DEBUG
             value: "true"
-          - name: ENVIRONMENT
-            value: development
           - name: REDIS_URL
             valueFrom:
               secretKeyRef:

@@ -69,7 +69,6 @@ jobs:
     - name: Generate pip requirements
       run: |
         python -m pipenv lock --keep-outdated --requirements > $GITHUB_WORKSPACE/requirements.txt
-        python -m pipenv lock --dev --keep-outdated --requirements > $GITHUB_WORKSPACE/requirements.dev.txt
 
     - name: Build and push image
       uses: docker/build-push-action@v2
@@ -79,16 +78,6 @@ jobs:
         tags: ghcr.io/yoiksoft/philosopher:${{ steps.gv.outputs.version }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new
-    
-    - name: Build and push development image
-      uses: docker/build-push-action@v2
-      with:
-        context: .
-        push: true
-        build-args: |
-          REQUIREMENTS_TXT=requirements.dev.txt
-        tags: ghcr.io/yoiksoft/philosopher:${{ steps.gv.outputs.version }}-dev
-        cache-from: type=local,src=/tmp/.buildx-cache-new
     
     - name: Move cache
       run: |
