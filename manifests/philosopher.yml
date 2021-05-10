@@ -50,7 +50,7 @@ spec:
       - name: philosopher
         image: ${YOIK_RESOURCE_IMAGE}
         command: ["/bin/sh", "-c"]
-        args: ["python -m uvicorn --host 0.0.0.0 --port 8000 --log-level trace --proxy-headers --root-path /${YOIK_RESOURCE_ID} app:app"]
+        args: ["uvicorn --host 0.0.0.0 --port 8000 --log-level trace --proxy-headers --root-path /${YOIK_RESOURCE_ID} app:app"]
         env:
         - name: DEBUG
           value: "false"

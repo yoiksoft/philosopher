@@ -12,7 +12,7 @@ spec:
         - name: app
           image: ${YOIK_RESOURCE_IMAGE}-dev
           command: ["/bin/sh", "-c"]
-          args: ["python -m aerich upgrade"]
+          args: ["aerich upgrade"]
           env:
           - name: DEBUG
             value: "false"
