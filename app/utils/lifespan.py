@@ -22,6 +22,8 @@ async def lifespan(app):
   await redis.initialize(url=url)
 
   # Create the database connection.
+  if config("ENVIRONMENT") == "development":
+    TORTOISE_ORM["apps"]["models"]["models"].append("aerich.models")
   await Tortoise.init(config=TORTOISE_ORM)
 
   # Yield as the app runs.

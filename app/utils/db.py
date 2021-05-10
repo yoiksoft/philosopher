@@ -15,7 +15,7 @@ TORTOISE_ORM = {
   },
   'apps': {
     'models': {
-      'models': ['app.services.quotes.models', "aerich.models"],
+      'models': ['app.services.quotes.models'],
       'default_connection': 'default',
     }
   },

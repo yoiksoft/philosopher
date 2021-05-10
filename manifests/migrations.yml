@@ -15,7 +15,9 @@ spec:
           args: ["aerich upgrade"]
           env:
           - name: DEBUG
-            value: "false"
+            value: "true"
+          - name: ENVIRONMENT
+            value: development
           - name: REDIS_URL
             valueFrom:
               secretKeyRef:
