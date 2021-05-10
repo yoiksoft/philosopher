@@ -49,16 +49,16 @@ spec:
       containers:
       - name: philosopher
         image: ${YOIK_RESOURCE_IMAGE}
-        command: [
-          "pipenv",
-          "run",
-          "uvicorn",
-          "--host", "0.0.0.0",
-          "--port", "8000",
-          "--log-level", "trace",
-          "--proxy-headers",
-          "--root-path", "${YOIK_RESOURCE_ID}"
-          "app:app",]
+        command:
+        - "pipenv",
+        - "run",
+        - "uvicorn",
+        - "--host", "0.0.0.0",
+        - "--port", "8000",
+        - "--log-level", "trace",
+        - "--proxy-headers",
+        - "--root-path", "${YOIK_RESOURCE_ID}"
+        - "app:app"
         env:
         - name: DEBUG
           value: "false"
