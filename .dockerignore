@@ -1,0 +1,17 @@
+Dockerfile
+.dockerignore
+
+.env.example
+.env
+
+.gitignore
+.git/
+.github/
+
+.dist/
+manifests/
+
+.style.yapf
+Pipfile
+Pipfile.lock
+*.md
