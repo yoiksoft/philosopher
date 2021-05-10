@@ -10,9 +10,9 @@ spec:
       - name: ghcr
       containers:
         - name: app
-          image: ${YOIK_RESOURCE_IMAGE}
+          image: ${YOIK_RESOURCE_IMAGE}-dev
           command: ["/bin/sh", "-c"]
-          args: ["pipenv run migrate"]
+          args: ["python -m aerich upgrade"]
           env:
           - name: DEBUG
             value: "false"
