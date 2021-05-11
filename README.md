@@ -14,6 +14,8 @@ You must be authorized to access all endpoints. More information on authorizatio
 
 ### Quotes and Meanings
 
+[Go back to top](#api)
+
 Users can write as many Quotes as they want. Each user on the platform is only allowed to submit one Meaning per Quote. A Quote is meant to be some sort of meaningful text, and a Meaning is meant to describe the readers interpretation of the Quote.
 
 - Quotes
@@ -261,6 +263,8 @@ Create a new Meaning. Specify the text for the Meaning using the "body" field in
 
 ### Friends and friend requests
 
+[Go back to top](#api)
+
 Some CRUD related endpoints are dependent on users being friends. For this reason there are a few endpoints to handle sending friend requests and dealing with friends.
 
 - Friends
@@ -494,5 +498,7 @@ Remove a request to be friends. Only the recipient of the request can query this
 
 
 ### Today functionality
+
+[Go back to top](#api)
 
 The today service of the API allows users to retrieve Quotes to vote on, to submit votes, to submit their own Quotes for Quote of the Day, and to view the Quote of the Day through history. Documentation will be available soon.
