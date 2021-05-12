@@ -240,6 +240,7 @@ Create a new Meaning. Specify the text for the Meaning using the "body" field in
 | --- | --- |
 | `404` | "Quote does not exist." No Quote with the specified `quote_id` could be found. |
 | `403` | "You cannot write Meanings for your own Quote." It's as simple as it says. |
+| `403` | "You are not permitted to create a Meaning for this Quote." You can only create a Meaning for a Quote if you are friends with the author or if the Quote is currently on your voting ballot. |
 | `403` | "You have already submitted a Meaning for this Quote." Each user is only allowed to submit one Meaning per Quote.
 | `400` | "Missing request body." You didn't include the request body. |
 | `400` | "Missing body field in request body." You must specify the value for "body" in the request body. |
@@ -502,3 +503,166 @@ Remove a request to be friends. Only the recipient of the request can query this
 [Go back to top](#api)
 
 The today service of the API allows users to retrieve Quotes to vote on, to submit votes, to submit their own Quotes for Quote of the Day, and to view the Quote of the Day through history. Documentation will be available soon.
+
+- [Get the Quote of the Day](#get-the-quote-of-the-day)
+- [Get Quotes to vote on](#get-quotes-to-vote-on)
+- [Vote on a Quote](#vote-on-a-quote)
+- [Submit a Quote for Quote of the Day](#submit-a-quote-for-quote-of-the-day)
+
+
+#### Get the Quote of the Day
+
+[Go back to header](#today-functionality)
+
+Get the Quote of the Day from a specific date.
+
+##### Endpoint
+
+`GET /@today/qotd`
+
+##### Options
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `date` | Query parameter | **Required**, the date in ISO format for which you would like to see the Quote of the Day. |
+
+##### Responses
+
+| Response | Description |
+| --- | --- |
+| `400` | "You must specify the date in query." The `date` field is missing from query parameters. |
+| `400` | "Invalid date selection." You either picked a day for which there was no Quote of the Day, or a day in the future, or a day which has not yet finished (today). |
+| `200` | "Success." See example below. |
+
+##### Example responses
+
+```json
+{
+  "message": "Success.",
+  "data": {
+    "quote": {
+      "id": 2,
+      "body": "Boba fett AYAYA Clap",
+      "published": "2021-05-12 02:24:55.637066+00:00"
+    },
+    "author": {
+      "user_id": "auth0|60933a869201390068ec9895",
+      "nickname": "matootie",
+      "picture": "https://cdn.auth0.com/avatars/ma.png"
+    }
+  }
+}
+```
+
+
+#### Get Quotes to vote on
+
+[Go back to header](#today-functionality)
+
+Get two fresh quotes to submit a vote on or to create Meanings for.
+
+##### Endpoint
+
+`GET /@today/quotes`
+
+##### Options
+
+There are no options for this endpoint.
+
+##### Responses
+
+| Response | Description |
+| --- | --- |
+| `204` | There was either an unlucky draw or the user has seen all the quotes they can see without getting back duplicates. In this case, a background task is initiated to fetch the user fresh quotes as soon as they're available. |
+| `200` | "Success." See example below. |
+
+##### Example responses
+
+```json
+{
+  "message": "Success.",
+  "data": [
+    {
+      "id": 173,
+      "body": "This is a Quote.",
+      "published": "2021-05-05 22:05:03.029577+00:00"
+    },
+    {
+      "id": 245,
+      "body": "This is also a Quote.",
+      "published": "2021-05-05 22:06:29.029577+00:00"
+    },
+  ]
+}
+```
+
+
+#### Vote on a Quote
+
+[Go back to header](#today-functionality)
+
+Vote on a Quote that appears on your voting ballot.
+
+##### Endpoint
+
+`POST /@today/vote`
+
+##### Options
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `vote` | Body field | **Required**, the ID of the Quote that you want to vote for. Must be on your voting ballot. Could be `0` if the user would like to skip the vote. |
+
+##### Responses
+
+| Response | Description |
+| --- | --- |
+| `400` | "Missing request body." You failed to include request body JSON. |
+| `400` | "Missing vote field in request body." You need to provide a value for vote in request body. |
+| `400` | "Missing Quotes to vote from." You need to query the ["get Quotes to vote on"](#get-quotes-to-vote-on) endpoint first to create a voting ballot. |
+| `400` | "Invalid vote." The provided value for vote is not one of the IDs on the voting ballot or `0`. |
+| `200` | "Success." See example below. |
+
+##### Example responses
+
+```json
+{
+  "message": "Success."
+}
+```
+
+
+#### Submit a Quote for Quote of the Day
+
+[Go back to header](#today-functionality)
+
+Submit one of your quotes to be Quote of the Day.
+
+##### Endpoint
+
+`POST /@today/submit`
+
+##### Options
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `quote_id` | Body field | **Required**, the Quote ID that you would like to submit. You must be the author of the Quote and it must have been written on the same day as you're submitting it. |
+
+##### Responses
+
+| Response | Description |
+| --- | --- |
+| `400` | "You already submitted a Quote for today." You are only allowed to submit one Quote per day. |
+| `400` | "Missing request body." You failed to include request body JSON. |
+| `400` | "Missing quote_id field in request body." You need to provide a value for quote_id in request body. |
+| `400` | "You cannot submit a Quote that you didn't write." You must be the author of the Quote for which you are trying to submit. |
+| `400` | "You can only submit Quotes that were written today." The Quote that you are trying to submit must have been written on the same day as the submission. |
+| `200` | "Success." See example below. |
+
+##### Example responses
+
+```json
+{
+  "message": "Success."
+}
+```

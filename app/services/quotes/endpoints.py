@@ -174,7 +174,7 @@ async def create_meaning(request: Request, redis: Redis, user: User):
 
   if not friends or not on_ballot:
     return JSONResponse({
-      "message": "You are not permitted to create a Meaning for this quote."
+      "message": "You are not permitted to create a Meaning for this Quote."
     }, status_code=403)
 
   existing: Meaning = await Meaning.filter(

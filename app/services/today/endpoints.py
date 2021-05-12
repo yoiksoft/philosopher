@@ -132,7 +132,7 @@ async def vote(request: Request, redis: Redis, user: User):
 
   if not await redis.exists(f"today:{day}:request:{user.user_id}"):
     return JSONResponse(
-      {"message": "Missing quotes to vote from."},
+      {"message": "Missing Quotes to vote from."},
       status_code=400,
     )
 
@@ -162,11 +162,11 @@ async def submit_quote(request: Request, redis: Redis, user: User):
   sub = await redis.get(f"today:{day}:user:{user.user_id}")
   if sub:
     return JSONResponse(
-      {"message": "You have already submitted a quote for today."},
+      {"message": "You have already submitted a Quote for today."},
       status_code=400,
     )
 
-  # Get quote ID from request body.
+  # Get Quote ID from request body.
   try:
     request_body = await request.json()
   except:
@@ -187,7 +187,7 @@ async def submit_quote(request: Request, redis: Redis, user: User):
 
   if not quote or quote.author_id != user.user_id:
     return JSONResponse(
-      {"message": "You cannot submit a quote that you didn't write."},
+      {"message": "You cannot submit a Quote that you didn't write."},
       status_code=400,
     )
 
@@ -195,7 +195,7 @@ async def submit_quote(request: Request, redis: Redis, user: User):
 
   if quote_published != day:
     return JSONResponse(
-      {"message": "You can only submit quotes that were written today."},
+      {"message": "You can only submit Quotes that were written today."},
       status_code=400,
     )
 
