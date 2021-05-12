@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from app.utils.redis import Redis
 from app.services.quotes.models import Quote
@@ -9,10 +9,10 @@ async def fetch_in_background(day: date, user_id: str) -> None:
   """
 
   redis = Redis().connection
-  today = date.today()
+  today = datetime.utcnow().date()
   daystring = day.isoformat()
 
-  await redis.set(f"today:background:{user_id}", True)
+  await redis.set(f"today:background:{user_id}", "true")
 
   # While it's still today...
   while today <= day:
@@ -20,7 +20,9 @@ async def fetch_in_background(day: date, user_id: str) -> None:
     # Have we seen all available quotes?
     num_quotes = await redis.scard(f"today:{daystring}:quotes")
     num_seen = await redis.scard(f"today:{daystring}:seen:{user_id}")
-    if num_seen >= num_quotes - 1:
+    submitted = await redis.exists(f"today:{daystring}:user:{user_id}")
+    offset = 2 if submitted else 1
+    if num_seen >= num_quotes - offset:
       break
 
     # Get some quotes.
@@ -47,7 +49,7 @@ async def fetch_in_background(day: date, user_id: str) -> None:
       break
 
     # Otherwise, try again.
-    today = date.today()
+    today = datetime.utcnow().date()
 
   await redis.delete(f"today:background:{user_id}")
   return

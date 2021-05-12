@@ -1,4 +1,5 @@
 from datetime import date
+from datetime import datetime
 
 from aioredis import Redis
 from starlette.routing import Request
@@ -13,11 +14,43 @@ from app.services.quotes.models import Quote
 
 
 @requires_auth
+@uses_redis
+async def qotd(request: Request, redis: Redis):
+
+  day = request.query_params.get("date")
+
+  if not day:
+    return JSONResponse({
+      "message": "You must specify the date in query."
+    }, status_code=400)
+  
+  res = await redis.zrevrangebyscore(f"today:{day}:scores", offset=0, count=1)
+
+  if not res or date == date.today().isoformat():
+    return JSONResponse({
+      "message": "Invalid date selection."
+    }, status_code=400)
+  
+  quote_id = res.pop()
+
+  quote = await Quote.filter(id=quote_id).first()
+  author = await quote.get_author()
+
+  return JSONResponse({
+    "message": "Success.",
+    "data": {
+      "quote": await quote.to_dict(),
+      "author": author.to_dict()
+    }
+  }, status_code=200)
+
+
+@requires_auth
 @uses_user
 @uses_redis
 async def get_quotes(request: Request, redis: Redis, user: User):
 
-  day = date.today().isoformat()
+  day = datetime.utcnow().date().isoformat()
 
   if await redis.exists(f"today:{day}:request:{user.user_id}"):
     result = await redis.sscan(f"today:{day}:request:{user.user_id}")
@@ -47,7 +80,7 @@ async def get_quotes(request: Request, redis: Redis, user: User):
       await redis.sadd(f"today:{day}:seen:{user.user_id}", *result)
     else:
       # Initiate a background task to get fresh quotes.
-      today = date.today()
+      today = datetime.utcnow().date()
       task = BackgroundTask(tools.fetch_in_background, today, user.user_id)
       return Response(
         status_code=204,
@@ -70,7 +103,7 @@ async def get_quotes(request: Request, redis: Redis, user: User):
 @uses_redis
 async def vote(request: Request, redis: Redis, user: User):
 
-  day = date.today().isoformat()
+  day = datetime.utcnow().date().isoformat()
 
   # Get the vote.
   try:
@@ -123,7 +156,7 @@ async def vote(request: Request, redis: Redis, user: User):
 @uses_redis
 async def submit_quote(request: Request, redis: Redis, user: User):
 
-  day = date.today().isoformat()
+  day = datetime.utcnow().date().isoformat()
 
   # Determine if a submission has already been made.
   sub = await redis.get(f"today:{day}:user:{user.user_id}")

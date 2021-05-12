@@ -16,6 +16,8 @@ async def get_friends(request: Request, user: User):
   # Get the user ID to find friends for.
   user_id = request.path_params["user_id"]
 
+  print(await user.to_dict())
+
   # Error if the requester is not friends with the specified user.
   are_friends = await dau.are_friends(user_id, user.user_id)
   if not are_friends and user_id != user.user_id:

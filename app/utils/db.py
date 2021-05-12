@@ -10,15 +10,13 @@ TORTOISE_ORM = {
         "user": config("DB_USER"),
         "password": config("DB_PASS"),
         "database": config("DB_NAME"),
-      }
+      },
     },
   },
   "apps": {
     "models": {
       "models": ["app.services.quotes.models", "aerich.models"],
       "default_connection": "default",
-    }
+    },
   },
-  "use_tz": False,
-  "timezone": "UTC"
 }
