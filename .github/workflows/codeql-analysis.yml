@@ -14,9 +14,17 @@ name: "CodeQL"
 on:
   push:
     branches: [ main ]
+    paths:
+      - "app/**"
+      - "Pipfile"
+      - "Pipfile.lock"
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ main ]
+    paths:
+      - "app/**"
+      - "Pipfile"
+      - "Pipfile.lock"
   schedule:
     - cron: '45 1 * * 3'
 
