@@ -5,7 +5,6 @@ import pytest
 from starlette.config import environ
 from starlette.testclient import TestClient
 
-
 environ["TESTING"] = "TRUE"
 
 
