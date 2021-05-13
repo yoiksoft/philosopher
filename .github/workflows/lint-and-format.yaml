@@ -4,6 +4,11 @@ on:
   push:
     tags-ignore:
       - "v1.*"
+    paths:
+      - ".pylintrc"
+      - ".style.yapf"
+      - "Pipfile"
+      - "app/**"
 
 jobs:
   lint-and-format:
