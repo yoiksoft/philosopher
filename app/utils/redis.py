@@ -1,10 +1,16 @@
+"""Redis utilities.
+"""
+
+# pylint: disable=attribute-defined-outside-init
+
 import aioredis
 
 from app.utils import Singleton
 
 
 class CreateRedisError(Exception):
-  pass
+  """Error to express a problem while creating a Redis connection.
+  """
 
 
 class Redis(Singleton):
@@ -29,13 +35,13 @@ class Redis(Singleton):
       try:
         self.connection: aioredis.Redis = await aioredis.create_redis_pool(
           url, encoding="utf-8")
-      except:
-        raise CreateRedisError
+      except Exception as exception:
+        raise CreateRedisError from exception
 
 
 def uses_redis(func):
   """Redis connection wrapper.
-  
+
   Wrapper for endpoinds that passes Redis connection down as a keyword
   argument.
   """

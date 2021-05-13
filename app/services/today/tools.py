@@ -1,3 +1,6 @@
+"""Extra tools for the Today service.
+"""
+
 from datetime import date, datetime
 
 from app.utils.redis import Redis
@@ -31,7 +34,7 @@ async def fetch_in_background(day: date, user_id: str) -> None:
     # Determine if noe of the quotes was written by the user.
     quote_a = await Quote.filter(id=quotes[0]).first()
     quote_b = await Quote.filter(id=quotes[1]).first()
-    authored = user_id == quote_a.author_id or user_id == quote_b.author_id
+    authored = user_id in (quote_a.author_id, quote_b.author_id)
 
     # If we haven't seen either of those quotes yet, use them!
     # Also if the user isn't the author of the quote.

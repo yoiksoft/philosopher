@@ -81,9 +81,7 @@ def uses_user(func):
     try:
       user_data = await get_user(request.state.user["sub"])
     except AttributeError:
-      raise AuthenticationError(
-        "Endpoint must require authentication before attempting to access underlying request user."
-      )
+      raise AuthenticationError from AttributeError
     return await func(request, *args, user=user_data, **kwargs)
 
   return inner
@@ -244,7 +242,7 @@ def requires_auth(func):
         {"message": "Incorrect claims in authorization token"},
         status_code=401,
       )
-    except Exception:
+    except:
       # Return error if anything else went wrong.
       return JSONResponse(
         {"Unable to parse authorization token."},

@@ -1,3 +1,6 @@
+"""Database utilities.
+"""
+
 from app.utils import config
 
 TORTOISE_ORM = {

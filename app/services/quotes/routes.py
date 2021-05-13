@@ -1,3 +1,6 @@
+"""Routes for the Quotes and Meanings service.
+"""
+
 from starlette.routing import Route
 
 from app.services.quotes import endpoints

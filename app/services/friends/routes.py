@@ -1,3 +1,6 @@
+"""Routes for the Friends service.
+"""
+
 from starlette.routing import Route
 
 from app.services.friends import endpoints

@@ -1,3 +1,6 @@
+"""Endpoints for the Friends service.
+"""
+
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -35,7 +38,7 @@ async def get_friends(request: Request, user: User):
 
   return JSONResponse(
     {
-      "message": f"Success.",
+      "message": "Success.",
       "data": friends
     },
     status_code=200,
@@ -166,7 +169,7 @@ async def get_requests(request: Request, user: User):
 
   return JSONResponse(
     {
-      "message": f"Success.",
+      "message": "Success.",
       "data": requesters
     },
     status_code=200,

@@ -1,3 +1,6 @@
+"""Models for the Quotes and Meanings service.
+"""
+
 from tortoise.models import Model
 from tortoise import fields
 
@@ -16,6 +19,9 @@ class Quote(Model):
   meanings: fields.ReverseRelation["Event"]
 
   async def to_dict(self):
+    """Serialize the object into a dictionary.
+    """
+
     return {
       "id": self.id,
       "body": self.body,
@@ -29,6 +35,9 @@ class Quote(Model):
     return await get_user(self.author_id)
 
   class Meta:
+    """Quote metadata.
+    """
+
     ordering = ["-published"]
 
 
@@ -44,6 +53,9 @@ class Meaning(Model):
   published = fields.DatetimeField(auto_now_add=True)
 
   async def to_dict(self):
+    """Serialize the object into a dictionary.
+    """
+
     return {
       "id": self.id,
       "body": self.body,
@@ -57,4 +69,7 @@ class Meaning(Model):
     return await get_user(self.author_id)
 
   class Meta:
+    """Meaning metadata.
+    """
+
     ordering = ["-published"]

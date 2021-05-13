@@ -7,13 +7,13 @@ from aioredis import Redis
 from app.utils.redis import Redis as RedisPool
 
 
-async def are_friends(a: str, b: str) -> bool:
+async def are_friends(user_a: str, user_b: str) -> bool:
   """Check if two users are friends.
   """
 
   redis: Redis = RedisPool().connection
 
-  result = await redis.sismember(f"friends:{a}", b)
+  result = await redis.sismember(f"friends:{user_a}", user_b)
 
   return result
 
@@ -29,28 +29,28 @@ async def has_requested(requester: str, recipient: str) -> bool:
   return result
 
 
-async def make_friends(a: str, b: str) -> None:
+async def make_friends(user_a: str, user_b: str) -> None:
   """Make two users into friends.
   """
 
   redis: Redis = RedisPool().connection
 
-  await redis.srem(f"requests:{a}", b)
-  await redis.srem(f"requests:{b}", a)
-  await redis.sadd(f"friends:{a}", b)
-  await redis.sadd(f"friends:{b}", a)
+  await redis.srem(f"requests:{user_a}", user_b)
+  await redis.srem(f"requests:{user_b}", user_a)
+  await redis.sadd(f"friends:{user_a}", user_b)
+  await redis.sadd(f"friends:{user_b}", user_a)
 
   return
 
 
-async def remove_friends(a: str, b: str) -> None:
+async def remove_friends(user_a: str, user_b: str) -> None:
   """Remove two users as friends.
   """
 
   redis: Redis = RedisPool().connection
 
-  await redis.srem(f"friends:{a}", b)
-  await redis.srem(f"friends:{b}", a)
+  await redis.srem(f"friends:{user_a}", user_b)
+  await redis.srem(f"friends:{user_b}", user_a)
 
   return
 

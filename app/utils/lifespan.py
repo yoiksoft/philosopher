@@ -1,3 +1,8 @@
+"""Lifespan utilities.
+"""
+
+# pylint: disable=abstract-class-instantiated
+
 import sentry_sdk
 from tortoise import Tortoise
 
@@ -6,10 +11,10 @@ from app.utils.redis import Redis
 from app.utils.db import TORTOISE_ORM
 
 
-async def lifespan(app):
+async def lifespan(_app):
   """Things to keep alive througout the lifespan of the app
 
-  In this case we want a connection to Redis to persist throughout the lifespan 
+  In this case we want a connection to Redis to persist throughout the lifespan
   of the app.
   """
 

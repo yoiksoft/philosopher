@@ -1,3 +1,6 @@
+"""Endpoints for the Ping service.
+"""
+
 from aioredis import Redis
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -9,7 +12,7 @@ from app.utils.redis import uses_redis
 @uses_redis
 @requires_auth
 @uses_user
-async def ping(request: Request, redis: Redis, user: User) -> JSONResponse:
+async def ping(_request: Request, redis: Redis, user: User) -> JSONResponse:
   """Ping endpoint
   """
 

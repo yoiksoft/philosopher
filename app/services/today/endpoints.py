@@ -1,3 +1,6 @@
+"""Endpoints for the Today service.
+"""
+
 from datetime import date
 from datetime import datetime
 
@@ -16,39 +19,42 @@ from app.services.quotes.models import Quote
 @requires_auth
 @uses_redis
 async def qotd(request: Request, redis: Redis):
+  """Get the Quote of the Day for a specific date.
+  """
 
   day = request.query_params.get("date")
 
   if not day:
-    return JSONResponse({
-      "message": "You must specify the date in query."
-    }, status_code=400)
-  
+    return JSONResponse({"message": "You must specify the date in query."},
+                        status_code=400)
+
   res = await redis.zrevrangebyscore(f"today:{day}:scores", offset=0, count=1)
 
   if not res or date == date.today().isoformat():
-    return JSONResponse({
-      "message": "Invalid date selection."
-    }, status_code=400)
-  
+    return JSONResponse({"message": "Invalid date selection."}, status_code=400)
+
   quote_id = res.pop()
 
   quote = await Quote.filter(id=quote_id).first()
   author = await quote.get_author()
 
-  return JSONResponse({
-    "message": "Success.",
-    "data": {
-      "quote": await quote.to_dict(),
-      "author": author.to_dict()
-    }
-  }, status_code=200)
+  return JSONResponse(
+    {
+      "message": "Success.",
+      "data": {
+        "quote": await quote.to_dict(),
+        "author": author.to_dict()
+      }
+    },
+    status_code=200)
 
 
 @requires_auth
 @uses_user
 @uses_redis
-async def get_quotes(request: Request, redis: Redis, user: User):
+async def get_quotes(_request: Request, redis: Redis, user: User):
+  """Get a couple Quotes to vote on.
+  """
 
   day = datetime.utcnow().date().isoformat()
 
@@ -102,6 +108,8 @@ async def get_quotes(request: Request, redis: Redis, user: User):
 @uses_user
 @uses_redis
 async def vote(request: Request, redis: Redis, user: User):
+  """Vote on a Quote on your voting ballot.
+  """
 
   day = datetime.utcnow().date().isoformat()
 
@@ -115,7 +123,7 @@ async def vote(request: Request, redis: Redis, user: User):
     )
 
   try:
-    vote = request_body["vote"]
+    user_vote = request_body["vote"]
   except KeyError:
     return JSONResponse(
       {"message": "Missing vote field in request body."},
@@ -123,7 +131,7 @@ async def vote(request: Request, redis: Redis, user: User):
     )
 
   # Process a skip if required.
-  if vote == 0:
+  if user_vote == 0:
     await redis.delete(f"today:{day}:request:{user.user_id}")
     return JSONResponse(
       {"message": "Success."},
@@ -136,13 +144,14 @@ async def vote(request: Request, redis: Redis, user: User):
       status_code=400,
     )
 
-  if not await redis.sismember(f"today:{day}:request:{user.user_id}", vote):
+  if not await redis.sismember(f"today:{day}:request:{user.user_id}",
+                               user_vote):
     return JSONResponse(
       {"message": "Invalid vote."},
       status_code=400,
     )
 
-  await redis.zincrby(f"today:{day}:scores", 1, vote)
+  await redis.zincrby(f"today:{day}:scores", 1, user_vote)
   await redis.delete(f"today:{day}:request:{user.user_id}")
 
   return JSONResponse(
@@ -155,6 +164,8 @@ async def vote(request: Request, redis: Redis, user: User):
 @uses_user
 @uses_redis
 async def submit_quote(request: Request, redis: Redis, user: User):
+  """Submit a Quote for Quote of the Day.
+  """
 
   day = datetime.utcnow().date().isoformat()
 

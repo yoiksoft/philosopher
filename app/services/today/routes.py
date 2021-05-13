@@ -1,3 +1,6 @@
+"""Routes for the Today service.
+"""
+
 from starlette.routing import Route
 
 from app.services.today import endpoints

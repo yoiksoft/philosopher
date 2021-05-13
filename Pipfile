@@ -8,8 +8,9 @@ server = "uvicorn app:app --reload"
 init-db = "aerich init-db"
 makemigrations = "aerich migrate"
 migrate = "aerich upgrade"
-lint = "pylint --indent-string='  ' app"
+lint = "pylint app"
 format = "yapf --recursive --in-place app/"
+"format:check" = "yapf --recursive --diff app/"
 test = "pytest"
 
 [packages]
