@@ -1,6 +1,9 @@
 name: Check for lint and format errors
 
-on: push
+on:
+  push:
+    tags-ignore:
+      - "v1.*"
 
 jobs:
   lint-and-format:
