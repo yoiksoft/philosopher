@@ -4,7 +4,7 @@
 from datetime import date, datetime
 
 from app.utils.redis import Redis
-from app.services.quotes.models import Quote
+from app.services.rest.models import Quote
 
 
 async def fetch_in_background(day: date, user_id: str) -> None:

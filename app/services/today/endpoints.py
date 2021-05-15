@@ -13,7 +13,7 @@ from app.utils.redis import uses_redis
 from app.utils.auth import requires_auth, uses_user, User
 
 from app.services.today import tools
-from app.services.quotes.models import Quote
+from app.services.rest.models import Quote
 
 
 @requires_auth

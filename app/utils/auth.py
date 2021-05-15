@@ -91,19 +91,30 @@ async def get_user_by_nickname(nickname: str):
   """Get rich user data by user nickname.
   """
 
-  token = await get_management_token()
-  fields_string = ",".join(["user_id", "nickname", "picture"])
-  session = aiohttp.ClientSession(headers={"Authorization": f"Bearer {token}"})
-  response = await session.get(
-    f"https://kwot.us.auth0.com/api/v2/users?q=nickname:\"{nickname}\"&search_engine=v3&fields={fields_string}&include_fields=true"  # pylint:disable=line-too-long
-  )
-  result = await response.json()
-  await session.close()
+  redis = Redis().connection
 
-  try:
-    user_data = result.pop()
-  except IndexError:
-    return None
+  # Fetch user data from cache.
+  user_data = await redis.hgetall(f"userdata:{nickname}")
+
+  if not user_data:
+    token = await get_management_token()
+    fields_string = ",".join(["user_id", "nickname", "picture"])
+    session = aiohttp.ClientSession(
+      headers={"Authorization": f"Bearer {token}"})
+    response = await session.get(
+      f"https://kwot.us.auth0.com/api/v2/users?q=nickname:\"{nickname}\"&search_engine=v3&fields={fields_string}&include_fields=true"  # pylint:disable=line-too-long
+    )
+    result = await response.json()
+    await session.close()
+
+    try:
+      user_data = result.pop()
+    except IndexError:
+      return None
+
+    # Cache user profile data for 10 minutes.
+    await redis.hmset_dict(f"userdata:{nickname}", user_data)
+    await redis.expire(f"userdata:{nickname}", 600)
 
   try:
     user = User(user_data["user_id"], user_data["nickname"],

@@ -18,14 +18,14 @@ class Quote(Model):
 
   meanings: fields.ReverseRelation["Event"]
 
-  async def to_dict(self):
+  def to_dict(self):
     """Serialize the object into a dictionary.
     """
 
     return {
       "id": self.id,
       "body": self.body,
-      "published": str(self.published),
+      "published": self.published.isoformat(),
     }
 
   async def get_author(self):
@@ -52,14 +52,14 @@ class Meaning(Model):
     model_name="models.Quote", related_name="meanings", on_delete="CASCADE")
   published = fields.DatetimeField(auto_now_add=True)
 
-  async def to_dict(self):
+  def to_dict(self):
     """Serialize the object into a dictionary.
     """
 
     return {
       "id": self.id,
       "body": self.body,
-      "published": str(self.published),
+      "published": self.published.isoformat(),
     }
 
   async def get_author(self):
