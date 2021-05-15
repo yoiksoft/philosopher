@@ -8,6 +8,7 @@ on:
       - ".pylintrc"
       - ".style.yapf"
       - "Pipfile"
+      - "Pipfile.lock"
       - "app/**"
 
 jobs:
