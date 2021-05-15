@@ -18,7 +18,7 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   rules:
-  - host: philosopher.yoik.software
+  - host: api.kwot.io
     http:
       paths:
       - path: /${YOIK_RESOURCE_ID}(/|$)(.*)
@@ -30,7 +30,7 @@ spec:
               number: 8000
   tls:
   - hosts:
-    - philosopher.yoik.software
+    - api.kwot.io
     secretName: philosopher-${YOIK_RESOURCE_ID}-cert
 ---
 apiVersion: apps/v1
