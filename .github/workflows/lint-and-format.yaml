@@ -2,6 +2,8 @@ name: Check for lint and format errors
 
 on:
   push:
+    branches:
+      - "**"
     tags-ignore:
       - "v1.*"
     paths:
