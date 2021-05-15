@@ -1,11 +1,26 @@
 # Have matootie review any changes made to dependencies and scripts.
-Pipfile       @matootie
-Pipfile.lock  @matootie
+Pipfile                   @matootie
+Pipfile.lock              @matootie
 
 # Have matootie review any changes made to repository meta and DevOps
 # configurations.
-/.github/     @matootie
-*.md          @matootie
+/.github/                 @matootie
+*.md                      @matootie
+.pylintrc                 @matootie
+.style.yapf               @matootie
+aerich.ini                @matootie
+
+# Have matootie review any changes made to breaking code libraries.
+/app/utils/               @matootie
+/app/utils/               @matootie
+/app/utils/               @matootie
+/app/settings.py          @matootie
+/app/__init__.py          @matootie
+
+# Have matootie review any database scripts.
+/app/migrations/**        @matootie
 
 # Have matootie review any changes made to Kubernetes resource templates.
-/manifests/   @matootie
+.dockerignore             @matootie
+Dockerfile                @matootie
+/manifests/               @matootie
