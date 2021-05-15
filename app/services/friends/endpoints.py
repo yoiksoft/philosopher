@@ -5,7 +5,25 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.services.friends import dau
-from app.utils.auth import requires_auth, uses_user, User, get_user
+from app.utils.auth import requires_auth, uses_user, User, get_user, get_user_by_nickname
+
+
+@requires_auth
+async def get_author(request: Request):
+  """Get a specific author.
+  """
+
+  nickname = request.path_params["nickname"]
+  author = await get_user_by_nickname(nickname)
+
+  if not author:
+    return JSONResponse({"message": "Author not found."}, status_code=400)
+
+  return JSONResponse({
+    "message": "Success.",
+    "data": author.to_dict()
+  },
+                      status_code=200)
 
 
 @requires_auth

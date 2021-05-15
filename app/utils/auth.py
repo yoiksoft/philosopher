@@ -87,6 +87,32 @@ def uses_user(func):
   return inner
 
 
+async def get_user_by_nickname(nickname: str):
+  """Get rich user data by user nickname.
+  """
+
+  token = await get_management_token()
+  fields_string = ",".join(["user_id", "nickname", "picture"])
+  session = aiohttp.ClientSession(headers={"Authorization": f"Bearer {token}"})
+  response = await session.get(
+    f"https://kwot.us.auth0.com/api/v2/users?q=nickname:\"{nickname}\"&search_engine=v3&fields={fields_string}&include_fields=true"  # pylint:disable=line-too-long
+  )
+  result = await response.json()
+  await session.close()
+
+  try:
+    user_data = result.pop()
+  except IndexError:
+    return None
+
+  try:
+    user = User(user_data["user_id"], user_data["nickname"],
+                user_data["picture"])
+  except KeyError:
+    return None
+  return user
+
+
 async def get_user(user_id):
   """Get rich user data by user ID.
   """
@@ -113,7 +139,11 @@ async def get_user(user_id):
     await redis.hmset_dict(f"userdata:{user_id}", user_data)
     await redis.expire(f"userdata:{user_id}", 600)
 
-  user = User(user_data["user_id"], user_data["nickname"], user_data["picture"])
+  try:
+    user = User(user_data["user_id"], user_data["nickname"],
+                user_data["picture"])
+  except KeyError:
+    return None
   return user
 
 

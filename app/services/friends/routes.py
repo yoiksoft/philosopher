@@ -7,6 +7,11 @@ from app.services.friends import endpoints
 
 ROUTES = [
   Route(
+    "/{nickname}",
+    endpoint=endpoints.get_author,
+    methods=["GET"],
+  ),
+  Route(
     "/{user_id}/friends",
     endpoint=endpoints.get_friends,
     methods=["GET"],

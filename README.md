@@ -268,6 +268,8 @@ Create a new Meaning. Specify the text for the Meaning using the "body" field in
 
 Some CRUD related endpoints are dependent on users being friends. For this reason there are a few endpoints to handle sending friend requests and dealing with friends.
 
+- Authors
+  - [Get a specific author](#get-a-specific-author)
 - Friends
   - [Get all friends of an author](#get-all-friends-of-an-author)
   - [Accept a friend request](#accept-a-friend-request)
@@ -276,6 +278,43 @@ Some CRUD related endpoints are dependent on users being friends. For this reaso
   - [Get all friend requests](#get-all-friend-requests)
   - [Send a friend request](#send-a-friend-request)
   - [Dismiss a friend request](#dismiss-a-friend-request)
+
+
+#### Get a specific author
+
+[Go back to header](#friends-and-friend-requests)
+
+See user profile data for a specific author.
+
+##### Endpoint
+
+`GET /authors/{nickname}`
+
+##### Options
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `nickname` | Path parameter | **Required**, the nickname or username of the user whos profile you would like to see. |
+
+##### Responses
+
+| Response | Description |
+| --- | --- |
+| `404` | "Author not found." No author with the corresponding nickname could be found. |
+| `200` | "Success." See example below. |
+
+##### Example responses
+
+```json
+{
+  "message": "Success.",
+  "data": {
+    "user_id": "auth0|60933a869201390068ec9895",
+    "nickname": "matootie",
+    "picture": "https://cdn.auth0.com/avatars/ma.png"
+  }
+}
+```
 
 
 #### Get all friends of an author
