@@ -2,48 +2,30 @@
 """
 
 import json
+import typing
 
 import aiohttp
+from aioredis import Redis
 from jose import jwt, exceptions
-from starlette.responses import JSONResponse
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.utils import config
-from app.utils.redis import Redis
+from app.utils.redis import Redis as RedisPool
 
-__client_id = config("AUTH0_CLIENT_ID")
-__client_secret = config("AUTH0_CLIENT_SECRET")
-
-
-class AuthenticationError(Exception):
-  """Basic authentication error to throw.
-  """
+_BASE_URL = config("AUTH0_BASE_URL")
+_CLIENT_ID = config("AUTH0_CLIENT_ID")
+_CLIENT_SECRET = config("AUTH0_CLIENT_SECRET")
+_ALGORITHMS = ["RS256"]
+_AUDIENCE = config("AUTH0_AUTH_AUDIENCE", default="philosopher")
 
 
-class User:
-  """User class to represent user data.
-  """
-
-  def __init__(self, user_id, nickname, picture):
-    self.user_id = user_id
-    self.nickname = nickname
-    self.picture = picture
-
-  def to_dict(self):
-    """Serialize the object to dictionary format.
-    """
-
-    return {
-      "user_id": self.user_id,
-      "nickname": self.nickname,
-      "picture": self.picture
-    }
-
-
-async def get_management_token():
+async def __get_management_token() -> str:
   """Get management token to use the Auth0 Management API.
   """
 
-  redis = Redis().connection
+  redis: Redis = RedisPool().connection
 
   # Check for cached token in Redis.
   token = await redis.get("philosopher:token")
@@ -54,11 +36,11 @@ async def get_management_token():
     session = aiohttp.ClientSession(
       headers={"Content-Type": "application/json"})
     response = await session.post(
-      "https://kwot.us.auth0.com/oauth/token",
+      f"https://{_BASE_URL}/oauth/token",
       data=json.dumps({
-        "client_id": __client_id,
-        "client_secret": __client_secret,
-        "audience": "https://kwot.us.auth0.com/api/v2/",
+        "client_id": _CLIENT_ID,
+        "client_secret": _CLIENT_SECRET,
+        "audience": f"https://{_BASE_URL}/api/v2/",
         "grant_type": "client_credentials"
       }))
     token_data = await response.json()
@@ -73,76 +55,104 @@ async def get_management_token():
   return token
 
 
-def uses_user(func):
+async def __get_user_identifier(
+  user_id: str = None,
+  username: str = None,
+) -> str:
+  """Get username from user ID.
+  """
+
+  if user_id and username:
+    raise ValueError("Must specify one of 'user_id' or 'username', not both")
+
+  redis: Redis = RedisPool().connection
+
+  if username:
+    field_had = "username"
+    value_had = username
+    field_wanted = "user_id"
+
+  elif user_id:
+    field_had = "user_id"
+    value_had = user_id
+    field_wanted = "username"
+
+  # Fetch username from cache.
+  value_wanted = await redis.get(f"{field_wanted}:{value_had}")
+
+  # Fetch fresh username if we don't have any in cache.
+  if not value_wanted:
+    token = await __get_management_token()
+
+    session = aiohttp.ClientSession(
+      headers={"Authorization": f"Bearer {token}"})
+    response = await session.get(
+      f"https://{_BASE_URL}/api/v2/users" \
+      f"?q={field_had}:\"{value_had}\"" \
+      f"&fields={field_wanted}" \
+       "&include_fields=true")
+    result = await response.json()
+    try:
+      user_data = result.pop()
+    except IndexError:
+      await session.close()
+      return None
+    await session.close()
+    value_wanted = user_data[field_wanted]
+
+    # Cache username indefinitely.
+    await redis.set(f"{field_wanted}:{value_had}", value_wanted)
+
+  # Return the username.
+  return value_wanted
+
+
+def use_user(func: typing.Callable) -> typing.Callable:
   """Wrapper that sends off rich user data to the underlying endpoint.
   """
 
-  async def inner(request, *args, **kwargs):
-    try:
-      user_data = await get_user(request.state.user["sub"])
-    except AttributeError:
-      raise AuthenticationError from AttributeError
+  async def inner(request: Request, *args, **kwargs):
+
+    # Grab Auth0 ID from request state.
+    user_id = request.state.user["sub"]
+
+    # Get user profile information.
+    user_data = await get_user(user_id=user_id)
+
+    # Run the underlying endpoint, passing down the user.
     return await func(request, *args, user=user_data, **kwargs)
 
   return inner
 
 
-async def get_user_by_nickname(nickname: str):
-  """Get rich user data by user nickname.
-  """
-
-  redis = Redis().connection
-
-  # Fetch user data from cache.
-  user_data = await redis.hgetall(f"userdata:{nickname}")
-
-  if not user_data:
-    token = await get_management_token()
-    fields_string = ",".join(["user_id", "nickname", "picture"])
-    session = aiohttp.ClientSession(
-      headers={"Authorization": f"Bearer {token}"})
-    response = await session.get(
-      f"https://kwot.us.auth0.com/api/v2/users?q=nickname:\"{nickname}\"&search_engine=v3&fields={fields_string}&include_fields=true"  # pylint:disable=line-too-long
-    )
-    result = await response.json()
-    await session.close()
-
-    try:
-      user_data = result.pop()
-    except IndexError:
-      return None
-
-    # Cache user profile data for 10 minutes.
-    await redis.hmset_dict(f"userdata:{nickname}", user_data)
-    await redis.expire(f"userdata:{nickname}", 600)
-
-  try:
-    user = User(user_data["user_id"], user_data["nickname"],
-                user_data["picture"])
-  except KeyError:
-    return None
-  return user
-
-
-async def get_user(user_id):
+async def get_user(
+  user_id: str = None,
+  username: str = None,
+) -> dict:
   """Get rich user data by user ID.
   """
 
-  redis = Redis().connection
+  if username:
+    user_id = await __get_user_identifier(username=username)
+    if not user_id:
+      return None
+
+  redis: Redis = RedisPool().connection
 
   # Fetch user data from cache.
   user_data = await redis.hgetall(f"userdata:{user_id}")
 
   # Fetch fresh data if we don't have any in cache.
   if not user_data:
-    token = await get_management_token()
-    fields_string = ",".join(["user_id", "nickname", "picture"])
+    token = await __get_management_token()
+    fields_string = ",".join(["user_id", "username", "picture"])
 
     session = aiohttp.ClientSession(
       headers={"Authorization": f"Bearer {token}"})
     response = await session.get(
-      f"https://kwot.us.auth0.com/api/v2/users/{user_id}?fields={fields_string}&include_fields=true"
-    )
+      f"https://{_BASE_URL}/api/v2/users/{user_id}" \
+      f"?fields={fields_string}" \
+       "&include_fields=true")
     user_data = await response.json()
     await session.close()
 
@@ -150,15 +160,11 @@ async def get_user(user_id):
     await redis.hmset_dict(f"userdata:{user_id}", user_data)
     await redis.expire(f"userdata:{user_id}", 600)
 
-  try:
-    user = User(user_data["user_id"], user_data["nickname"],
-                user_data["picture"])
-  except KeyError:
-    return None
-  return user
+  # Return the user data.
+  return user_data
 
 
-def find_matching_key(kid, keys):
+def _find_matching_key(kid: str, keys: typing.List[dict]) -> dict:
   """Find matching key for a specific key ID.
   """
 
@@ -178,11 +184,11 @@ def find_matching_key(kid, keys):
   return rsa_key
 
 
-async def get_keys(from_cache=True):
+async def _get_keys(from_cache: bool = True) -> dict:
   """Fetch keys from cache and/or from JWKS endpoint.
   """
 
-  redis = Redis().connection
+  redis: Redis = RedisPool().connection
 
   keys_raw = None
   jwks = None
@@ -195,8 +201,7 @@ async def get_keys(from_cache=True):
   else:
     # Get a fresh set of keys.
     session = aiohttp.ClientSession()
-    response = await session.get(
-      "https://kwot.us.auth0.com/.well-known/jwks.json")
+    response = await session.get(f"https://{_BASE_URL}/.well-known/jwks.json")
     jwks = await response.json()
     await session.close()
     # Cache the keys for maximum one day.
@@ -205,12 +210,16 @@ async def get_keys(from_cache=True):
   return jwks
 
 
-def requires_auth(func):
-  """Decorator that prepends auth functionality to an endpoint.
+class AuthMiddleware(BaseHTTPMiddleware):
+  """Ensures that clients are authorized before accessing routes.
   """
 
-  async def inner(request, *args, **kwargs):
-    """Auth wrapper
+  async def dispatch(
+    self,
+    request: Request,
+    call_next: typing.Callable,
+  ) -> Response:
+    """Code to run when the middleware is dispatched.
     """
 
     # Get the Authorization header.
@@ -233,7 +242,7 @@ def requires_auth(func):
     token = header[7:]
 
     # Fetch keys from JSON Web Key Set.
-    jwks = await get_keys(from_cache=True)
+    jwks = await _get_keys(from_cache=True)
 
     # Get the token header without verifying it.
     try:
@@ -245,14 +254,14 @@ def requires_auth(func):
       )
 
     # For every key that our issuer has signed with previously...
-    rsa_key = find_matching_key(unverified_header["kid"], jwks["keys"])
+    rsa_key = _find_matching_key(unverified_header["kid"], jwks["keys"])
 
     # Return error if there's no matching signing key.
     if not rsa_key:
       # Get a fresh set of keys just in case we just missed a new sign.
-      jwks = await get_keys(from_cache=False)
+      jwks = await _get_keys(from_cache=False)
       # Attempt to find key again.
-      rsa_key = find_matching_key(unverified_header["kid"], jwks["keys"])
+      rsa_key = _find_matching_key(unverified_header["kid"], jwks["keys"])
       # If we still don't have a matching key.
       if not rsa_key:
         # Return an error.
@@ -268,9 +277,9 @@ def requires_auth(func):
       user = jwt.decode(
         token,
         rsa_key,
-        algorithms=["RS256"],
-        audience="philosopher",
-        issuer="https://kwot.us.auth0.com/")
+        algorithms=_ALGORITHMS,
+        audience=_AUDIENCE,
+        issuer=f"https://{_BASE_URL}/")
     except jwt.ExpiredSignatureError:
       # Return error if the token expired.
       return JSONResponse(
@@ -286,7 +295,7 @@ def requires_auth(func):
     except:
       # Return error if anything else went wrong.
       return JSONResponse(
-        {"Unable to parse authorization token."},
+        {"message": "Unable to parse authorization token."},
         status_code=401,
       )
 
@@ -294,7 +303,4 @@ def requires_auth(func):
     request.state.user = user
 
     # Run the underlying endpoint.
-    return await func(request, *args, **kwargs)
-
-  # Return the wrapped endpoint.
-  return inner
+    return await call_next(request)

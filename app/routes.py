@@ -1,11 +1,28 @@
 """URL mappings to endpoints
 """
 
-from starlette.routing import Mount
+from starlette.routing import Route
 
-from app.services.rest import routes as rest
+from app import endpoints
 
 # Routes for the application.
 ROUTES = [
-  Mount("/", routes=rest.ROUTES),
+  # Get an author profile.
+  Route(
+    "/authors/{username}",
+    endpoint=endpoints.get_author,
+    methods=["GET"],
+  ),
+  # Get your relationship with an author.
+  Route(
+    "/authors/{username}/@me",
+    endpoint=endpoints.get_relationship,
+    methods=["GET"],
+  ),
+  # Get quotes from an author.
+  Route(
+    "/authors/{username}/quotes",
+    endpoint=endpoints.get_quotes,
+    methods=["GET"],
+  ),
 ]

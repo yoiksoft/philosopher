@@ -3,38 +3,49 @@
 
 # pylint: disable=abstract-class-instantiated
 
+import typing
 import sentry_sdk
 from tortoise import Tortoise
+from starlette.applications import Starlette
 
-from app.utils import config
 from app.utils.redis import Redis
-from app.utils.db import TORTOISE_ORM
 
 
-async def lifespan(_app):
-  """Things to keep alive througout the lifespan of the app
+def get_lifespan(
+  sentry_dsn: str,
+  redis_url: str,
+  tortoise_config: dict,
+) -> typing.AsyncGenerator:
+  """Generator to return a lifespan function.
 
-  In this case we want a connection to Redis to persist throughout the lifespan
-  of the app.
+  Passes configuration from settings to the lifespan function.
   """
 
-  # Initialize the Sentry SDK.
-  sentry_sdk.init(dsn=config("SENTRY_DSN", default=None))
+  async def lifespan(_app: Starlette):
+    """Things to keep alive througout the lifespan of the app
 
-  # Create the Redis connection.
-  url = config("REDIS_URL")
-  redis = Redis()
-  await redis.initialize(url=url)
+    In this case we want a connection to Redis to persist throughout the lifespan
+    of the app.
+    """
 
-  # Create the database connection.
-  await Tortoise.init(config=TORTOISE_ORM)
+    # Initialize the Sentry SDK.
+    sentry_sdk.init(dsn=sentry_dsn)
 
-  # Yield as the app runs.
-  yield
+    # Create the Redis connection.
+    redis = Redis()
+    await redis.initialize(url=redis_url)
 
-  # Close the Redis connection once the app is shutting down.
-  redis.connection.close()
-  await redis.connection.wait_closed()
+    # Create the database connection.
+    await Tortoise.init(config=tortoise_config)
 
-  # Close the Tortoise connection.
-  await Tortoise.close_connections()
+    # Yield as the app runs.
+    yield
+
+    # Close the Redis connection once the app is shutting down.
+    redis.connection.close()
+    await redis.connection.wait_closed()
+
+    # Close the Tortoise connection.
+    await Tortoise.close_connections()
+
+  return lifespan

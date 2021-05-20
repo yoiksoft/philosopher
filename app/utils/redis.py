@@ -8,11 +8,6 @@ import aioredis
 from app.utils import Singleton
 
 
-class CreateRedisError(Exception):
-  """Error to express a problem while creating a Redis connection.
-  """
-
-
 class Redis(Singleton):
   """Redis singleton.
 
@@ -32,14 +27,11 @@ class Redis(Singleton):
     """
 
     if not self.connection:
-      try:
-        self.connection: aioredis.Redis = await aioredis.create_redis_pool(
-          url, encoding="utf-8")
-      except Exception as exception:
-        raise CreateRedisError from exception
+      self.connection: aioredis.Redis = await aioredis.create_redis_pool(
+        url, encoding="utf-8")
 
 
-def uses_redis(func):
+def use_redis(func):
   """Redis connection wrapper.
 
   Wrapper for endpoinds that passes Redis connection down as a keyword
