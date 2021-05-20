@@ -10,9 +10,7 @@ from app.models import RelationshipStatus
 from app import dto
 
 
-async def get_author(
-  request: Request,
-) -> JSONResponse:
+async def get_author(request: Request,) -> JSONResponse:
   """Get an author profile.
   """
 
@@ -39,10 +37,7 @@ async def get_author(
 
 
 @use_user
-async def get_relationship(
-  request: Request,
-  user: dict
-) -> JSONResponse:
+async def get_relationship(request: Request, user: dict) -> JSONResponse:
   """Check the relationship between any user and the signed in user.
   """
 
@@ -63,7 +58,7 @@ async def get_relationship(
         "message": "Success.",
         "result": RelationshipStatus.ME,
       },
-      status_code=200
+      status_code=200,
     )
 
   status = await dto.get_relationship_between(
@@ -74,15 +69,13 @@ async def get_relationship(
   return JSONResponse(
     {
       "message": "Success.",
-      "result": status
+      "result": status,
     },
     status_code=200,
   )
 
 
-async def get_quotes(
-  request: Request,
-) -> JSONResponse:
+async def get_quotes(request: Request,) -> JSONResponse:
   """Get quotes from an author.
   """
 
@@ -94,7 +87,7 @@ async def get_quotes(
       {
         "message": "Not found.",
       },
-      status_code=404
+      status_code=404,
     )
 
   offset = request.query_params.get("offset", default=0)
@@ -109,7 +102,7 @@ async def get_quotes(
   return JSONResponse(
     {
       "message": "Success.",
-      "result": quotes
+      "result": quotes,
     },
-    status_code=200
+    status_code=200,
   )
