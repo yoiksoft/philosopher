@@ -90,13 +90,30 @@ async def get_quotes(request: Request,) -> JSONResponse:
       status_code=404,
     )
 
-  offset = request.query_params.get("offset", default=0)
-  count = request.query_params.get("count", default=10)
+  offset = int(request.query_params.get("offset", default=0))
+  count = int(request.query_params.get("count", default=10))
+
+  if offset < 0:
+    return JSONResponse(
+      {
+        "message": "Query parameter 'offset' must be greater than " \
+                   "or equal to 0.",
+      },
+      status_code=400,
+    )
+
+  if count < 1:
+    return JSONResponse(
+      {
+        "message": "Query parameter 'count' must be greater than 1.",
+      },
+      status_code=400,
+    )
 
   quotes = await dto.get_quotes_from(
     author["user_id"],
-    offset=offset,
-    count=count,
+    offset=int(offset),
+    count=int(count),
   )
 
   return JSONResponse(
