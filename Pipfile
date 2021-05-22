@@ -23,6 +23,7 @@ python-jose = "~=3.2.0"
 tortoise-orm = {extras = ["accel", "asyncpg"], version = "~=0.17.2"}
 requests = "~=2.25.1"
 aerich = "~=0.5.3"
+typesystem = "*"
 
 [dev-packages]
 pytest = "~=6.2.4"

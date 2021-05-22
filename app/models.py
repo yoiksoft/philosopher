@@ -1,37 +1,8 @@
 """Data models for the API.
 """
 
-from enum import IntEnum
 from tortoise.models import Model
 from tortoise import fields
-
-
-class RelationshipStatus(IntEnum):
-  """Enumeration representing the status of a relationship
-  """
-
-  NONE = 0
-  PENDING = 1
-  ACCEPTED = 2
-  DECLINED = 3
-  BLOCKED = 4
-  ME = 5
-
-
-class Relationship(Model):
-  """Relationship model
-  """
-
-  author_one_id = fields.CharField(max_length=40)
-  author_two_id = fields.CharField(max_length=40)
-  status = fields.SmallIntField()
-  action_id = fields.CharField(max_length=40)
-
-  class Meta:
-    """Relationship metadata.
-    """
-
-    unique_together = ("author_one_id", "author_two_id")
 
 
 class Quote(Model):
@@ -43,6 +14,17 @@ class Quote(Model):
   author = fields.CharField(max_length=40, null=True)
   published = fields.DatetimeField(auto_now_add=True)
   meanings: fields.ReverseRelation["Meaning"]
+
+  async def to_dict(self):
+    """Serialize into dictionary.
+    """
+
+    return {
+      "id": self.id,
+      "body": self.body,
+      "author": self.author,
+      "published": self.published.isoformat(),
+    }
 
   class Meta:
     """Quote metadata.
@@ -61,6 +43,20 @@ class Meaning(Model):
   quote: fields.ForeignKeyRelation[Quote] = fields.ForeignKeyField(
     model_name="models.Quote", related_name="meanings", on_delete="CASCADE")
   published = fields.DatetimeField(auto_now_add=True)
+
+  async def to_dict(self):
+    """Serialize into dictionary.
+    """
+
+    await self.fetch_related("quote")
+
+    return {
+      "id": self.id,
+      "body": self.body,
+      "author": self.author,
+      "quote": self.quote.id,  # pylint: disable=no-member
+      "published": self.published.isoformat(),
+    }
 
   class Meta:
     """Meaning metadata.
