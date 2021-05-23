@@ -107,24 +107,6 @@ async def __get_user_identifier(
   return value_wanted
 
 
-def use_user(func: typing.Callable) -> typing.Callable:
-  """Wrapper that sends off rich user data to the underlying endpoint.
-  """
-
-  async def inner(request: Request, *args, **kwargs):
-
-    # Grab Auth0 ID from request state.
-    user_id = request.state.user["sub"]
-
-    # Get user profile information.
-    user_data = await get_user(user_id=user_id)
-
-    # Run the underlying endpoint, passing down the user.
-    return await func(request, *args, user=user_data, **kwargs)
-
-  return inner
-
-
 async def get_user(
   user_id: str = None,
   username: str = None,

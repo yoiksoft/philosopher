@@ -4,26 +4,20 @@
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from app.utils.auth import use_user
+from app.utils.decorators import restrict_quote_author, use_json_body, use_path_quote, use_user
 from app.schemas import QuoteSchema
 from app.models import Quote
 
 
-# GET ONE
-async def get_quote(request: Request) -> JSONResponse:
+@use_path_quote(path_key="quote_id")
+async def get_quote(
+  _request: Request,
+  quote: Quote,
+  *_args,
+  **_kwargs,
+) -> JSONResponse:
   """Get a specific Quote.
   """
-
-  quote_id = request.path_params["quote_id"]
-  quote = await Quote.get_or_none(pk=quote_id)
-
-  if not quote:
-    return JSONResponse(
-      {
-        "message": "Quote not found.",
-      },
-      status_code=404,
-    )
 
   return JSONResponse(
     {
@@ -35,38 +29,21 @@ async def get_quote(request: Request) -> JSONResponse:
 
 
 # CREATE
+@use_json_body(QuoteSchema)
 @use_user
 async def create_quote(
-  request: Request,
+  _request: Request,
   user: dict,
+  data: dict,
+  *_args,
+  **_kwargs,
 ) -> JSONResponse:
   """Endpoint to create a new Quote.
   """
 
-  try:
-    data = await request.json()
-  except:
-    return JSONResponse(
-      {
-        "message": "Missing or invalid request body.",
-      },
-      status_code=400,
-    )
-
-  quote_data, errors = QuoteSchema.validate_or_error(data)
-
-  if errors:
-    return JSONResponse(
-      {
-        "message": "Failed validation.",
-        "result": dict(errors),
-      },
-      status_code=400,
-    )
-
   quote = await Quote.create(
     author=user["user_id"],
-    body=quote_data.body,
+    body=data.body,
   )
 
   return JSONResponse(
@@ -78,34 +55,17 @@ async def create_quote(
   )
 
 
-# DELETE
 @use_user
+@use_path_quote(path_key="quote_id")
+@restrict_quote_author
 async def disown_quote(
-  request: Request,
-  user: dict,
+  _request: Request,
+  quote: Quote,
+  *_args,
+  **_kwargs,
 ) -> JSONResponse:
   """Endpoint to disown a Quote.
   """
-
-  quote_id = request.path_params["quote_id"]
-
-  quote = await Quote.get_or_none(pk=quote_id)
-
-  if not quote:
-    return JSONResponse(
-      {
-        "message": "Quote could not be found.",
-      },
-      status_code=404,
-    )
-
-  if quote.author != user["user_id"]:
-    return JSONResponse(
-      {
-        "message": "You can only delete your own quotes.",
-      },
-      status_code=403,
-    )
 
   quote.author = None
   await quote.save()

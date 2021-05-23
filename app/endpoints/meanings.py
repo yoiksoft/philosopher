@@ -4,41 +4,31 @@
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from app.utils.auth import use_user
+from app.utils.decorators import (
+  restrict_meaning_author_quote_author,
+  restrict_meaning_author,
+  restrict_quote_not_author,
+  use_json_body,
+  use_user,
+  use_path_meaning,
+  use_path_quote,
+)
 from app.schemas import MeaningSchema
 from app.models import Meaning, Quote
 
 
 # GET ONE
 @use_user
+@use_path_meaning(path_key="meaning_id")
+@restrict_meaning_author_quote_author
 async def get_meaning(
-  request: Request,
-  user: dict,
+  _request: Request,
+  meaning: Meaning,
+  *_args,
+  **_kwargs,
 ) -> JSONResponse:
   """Get a specific Meaning.
   """
-
-  meaning_id = request.path_params["meaning_id"]
-  meaning = await Meaning.get_or_none(pk=meaning_id)
-
-  if not meaning:
-    return JSONResponse(
-      {
-        "message": "Meaning not found.",
-      },
-      status_code=404,
-    )
-
-  await meaning.fetch_related("quote")
-
-  if meaning.author != user["user_id"] \
-  and meaning.quote.author != user["user_id"]:
-    return JSONResponse(
-      {
-        "message": "You are not allowed to see this meaning.",
-      },
-      status_code=403,
-    )
 
   return JSONResponse(
     {
@@ -50,53 +40,20 @@ async def get_meaning(
 
 
 # CREATE
+@use_json_body(MeaningSchema)
+@use_path_quote(path_key="quote_id")
 @use_user
+@restrict_quote_not_author
 async def create_meaning(
-  request: Request,
+  _request: Request,
   user: dict,
+  quote: Quote,
+  data: MeaningSchema,
+  *_args,
+  **_kwargs,
 ) -> JSONResponse:
   """Endpoint to create a new Meaning.
   """
-
-  try:
-    data = await request.json()
-  except:
-    return JSONResponse(
-      {
-        "message": "Missing or invalid request body.",
-      },
-      status_code=400,
-    )
-
-  meaning_data, errors = MeaningSchema.validate_or_error(data)
-
-  if errors:
-    return JSONResponse(
-      {
-        "message": "Failed validation.",
-        "result": dict(errors),
-      },
-      status_code=400,
-    )
-
-  quote_id = request.path_params["quote_id"]
-  quote = await Quote.get_or_none(pk=quote_id)
-
-  if not quote:
-    return JSONResponse(
-      {
-        "message": "Quote not found.",
-      },
-      status_code=404,
-    )
-
-  if quote.author == user["user_id"]:
-    return JSONResponse(
-      {
-        "message": "You cannot write Meanings for your own Quote.",
-      },
-      status_code=403,
-    )
 
   meaning = await Meaning.get_or_none(
     author=user["user_id"],
@@ -113,7 +70,7 @@ async def create_meaning(
 
   meaning = await Meaning.create(
     author=user["user_id"],
-    body=meaning_data.body,
+    body=data.body,
     quote=quote,
   )
 
@@ -128,31 +85,16 @@ async def create_meaning(
 
 # DELETE
 @use_user
+@use_path_meaning(path_key="meaning_id")
+@restrict_meaning_author
 async def disown_meaning(
-  request: Request,
-  user: dict,
+  _request: Request,
+  meaning: Meaning,
+  *_args,
+  **_kwargs,
 ) -> JSONResponse:
   """Endpoint to disown a Meaning.
   """
-
-  meaning_id = request.path_params["meaning_id"]
-  meaning = await Meaning.get_or_none(pk=meaning_id)
-
-  if not meaning:
-    return JSONResponse(
-      {
-        "message": "Meaning could not be found.",
-      },
-      status_code=404,
-    )
-
-  if meaning.author != user["user_id"]:
-    return JSONResponse(
-      {
-        "message": "You can only disown your own Meanings.",
-      },
-      status_code=403,
-    )
 
   meaning.author = None
   await meaning.save()
