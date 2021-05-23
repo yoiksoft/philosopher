@@ -4,7 +4,13 @@
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from app.utils.decorators import restrict_quote_author, use_json_body, use_path_quote, use_user
+from app.utils.decorators import (
+  validate_body,
+  use_path_quote,
+  use_user,
+  restrict,
+)
+from app.utils.restrictions import author_of_quote
 from app.schemas import QuoteSchema
 from app.models import Quote
 
@@ -29,7 +35,7 @@ async def get_quote(
 
 
 # CREATE
-@use_json_body(QuoteSchema)
+@validate_body(QuoteSchema)
 @use_user
 async def create_quote(
   _request: Request,
@@ -57,7 +63,7 @@ async def create_quote(
 
 @use_user
 @use_path_quote(path_key="quote_id")
-@restrict_quote_author
+@restrict(author_of_quote, assertion=True)
 async def disown_quote(
   _request: Request,
   quote: Quote,

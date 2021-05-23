@@ -69,6 +69,7 @@ def use_path_meaning(path_key: str = "meaning_id"):
           },
           status_code=404,
         )
+      await meaning.fetch_related("quote")
       return await func(request, *args, meaning=meaning, **kwargs)
 
     return wrapped
@@ -100,126 +101,30 @@ def use_path_quote(path_key: str = "quote_id"):
   return wrapper
 
 
-def restrict_quote_author(func: typing.Coroutine):
-  """Wrapper that restricts actions to the quote author.
+def restrict(
+  *check_functions: typing.Iterable[typing.Callable[..., bool]],
+  assertion: bool = True
+) -> typing.Callable:
+  """Wrap an endpiont with some sort of restriction.
   """
 
-  async def inner(request: Request, *args, **kwargs):
-    user = kwargs.get("user")
-    quote = kwargs.get("quote")
-
-    if not user or not quote:
-      return JSONResponse(
-        {
-          "message": "Forbidden.",
-        },
-        status_code=403,
-      )
-
-    if quote.author != user["user_id"]:
-      return JSONResponse(
-        {
-          "message": "Forbidden.",
-        },
-        status_code=403,
-      )
-
-    return await func(request, *args, **kwargs)
-
-  return inner
+  def wrapper(func: typing.Coroutine) -> typing.Coroutine:
+    @wraps(func)
+    async def wrapped(request: Request, *args, **kwargs) -> JSONResponse:
+      results = [fun(*args, **kwargs) for fun in check_functions]
+      if any(results) is not assertion:
+        return JSONResponse(
+          {
+            "message": "Forbidden.",
+          },
+          status_code=403,
+        )
+      return await func(request, *args, **kwargs)
+    return wrapped
+  return wrapper
 
 
-def restrict_quote_not_author(func: typing.Coroutine):
-  """Wrapper that restricts actions to the quote author.
-  """
-
-  async def inner(request: Request, *args, **kwargs):
-    user = kwargs.get("user")
-    quote = kwargs.get("quote")
-
-    if not user or not quote:
-      return JSONResponse(
-        {
-          "message": "Forbidden.",
-        },
-        status_code=403,
-      )
-
-    if quote.author == user["user_id"]:
-      return JSONResponse(
-        {
-          "message": "Forbidden.",
-        },
-        status_code=403,
-      )
-
-    return await func(request, *args, **kwargs)
-
-  return inner
-
-
-def restrict_meaning_author(func: typing.Coroutine):
-  """Wrapper that restricts actions to the meaning author or quote author.
-  """
-
-  async def inner(request: Request, *args, **kwargs):
-    user = kwargs.get("user")
-    meaning = kwargs.get("meaning")
-
-    if not user or not meaning:
-      return JSONResponse(
-        {
-          "message": "Forbidden.",
-        },
-        status_code=403,
-      )
-
-    if meaning.author != user["user_id"]:
-      return JSONResponse(
-        {
-          "message": "Forbidden.",
-        },
-        status_code=403,
-      )
-
-    return await func(request, *args, **kwargs)
-
-  return inner
-
-
-def restrict_meaning_author_quote_author(func: typing.Coroutine):
-  """Wrapper that restricts actions to the meaning author or quote author.
-  """
-
-  async def inner(request: Request, *args, **kwargs):
-    user = kwargs.get("user")
-    meaning = kwargs.get("meaning")
-
-    if not user or not meaning:
-      return JSONResponse(
-        {
-          "message": "Forbidden.",
-        },
-        status_code=403,
-      )
-
-    await meaning.fetch_related("quote")
-
-    if meaning.author != user["user_id"] \
-    and meaning.quote.author != user["user_id"]:
-      return JSONResponse(
-        {
-          "message": "Forbidden.",
-        },
-        status_code=403,
-      )
-
-    return await func(request, *args, **kwargs)
-
-  return inner
-
-
-def use_json_body(schema: Schema):
+def validate_body(schema: Schema):
   """Wrapper that validates and exposes request body as keyword argument.
   """
 
@@ -253,53 +158,3 @@ def use_json_body(schema: Schema):
     return wrapped
 
   return wrapper
-
-
-def path_author_not_self(func: typing.Coroutine,) -> typing.Coroutine:
-  """Wrapper requires the user performing the action not be the author
-  receiving the action.
-  """
-
-  async def inner(request: Request, *args, **kwargs):
-    author = kwargs.get("author")
-    user = kwargs.get("user")
-    if not author or not user:
-      return JSONResponse(
-        {"message": "Forbidden."},
-        status_code=403,
-      )
-    if user["user_id"] == author["user_id"]:
-      return JSONResponse(
-        {
-          "message": "Forbidden.",
-        },
-        status_code=403,
-      )
-    return await func(request, *args, **kwargs)
-
-  return inner
-
-
-def path_author_is_self(func: typing.Coroutine,) -> typing.Coroutine:
-  """Wrapper requires the user performing the action be the author
-  receiving the action.
-  """
-
-  async def inner(request: Request, *args, **kwargs):
-    author = kwargs.get("author")
-    user = kwargs.get("user")
-    if not author or not user:
-      return JSONResponse(
-        {"message": "Forbidden."},
-        status_code=403,
-      )
-    if user["user_id"] != author["user_id"]:
-      return JSONResponse(
-        {
-          "message": "Forbidden.",
-        },
-        status_code=403,
-      )
-    return await func(request, *args, **kwargs)
-
-  return inner

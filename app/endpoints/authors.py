@@ -5,7 +5,8 @@ import typing
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from app.utils.decorators import path_author_is_self, use_user, use_path_author
+from app.utils.decorators import use_user, use_path_author, restrict
+from app.utils.restrictions import author_is_self
 from app.models import Meaning, Quote
 
 
@@ -77,7 +78,7 @@ async def get_quotes_from_author(
 # GET ALL
 @use_user
 @use_path_author(path_key="username")
-@path_author_is_self
+@restrict(author_is_self, assertion=True)
 async def get_meanings_from_author(
   request: Request,
   author: dict,
