@@ -13,6 +13,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.utils import config
 from app.utils.redis import Redis as RedisPool
+from app.models import Author
 
 _BASE_URL = config("AUTH0_BASE_URL")
 _CLIENT_ID = config("AUTH0_CLIENT_ID")
@@ -110,7 +111,7 @@ async def __get_user_identifier(
 async def get_user(
   user_id: str = None,
   username: str = None,
-) -> dict:
+) -> typing.Union[Author, None]:
   """Get rich user data by user ID.
   """
 
@@ -143,7 +144,10 @@ async def get_user(
     await redis.expire(f"userdata:{user_id}", 600)
 
   # Return the user data.
-  return user_data
+  return Author(
+    user_id=user_data["user_id"],
+    username=user_data["username"],
+    picture=user_data["picture"])
 
 
 def _find_matching_key(kid: str, keys: typing.List[dict]) -> dict:

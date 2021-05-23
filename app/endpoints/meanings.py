@@ -8,17 +8,16 @@ from app.utils.decorators import (
   restrict,
   validate_body,
   use_user,
-  use_path_meaning,
-  use_path_quote,
+  use_path_model,
 )
 from app.utils.restrictions import author_of_meaning, author_of_quote
 from app.schemas import MeaningSchema
-from app.models import Meaning, Quote
+from app.models import Author, Meaning, Quote
 
 
 # GET ONE
 @use_user
-@use_path_meaning(path_key="meaning_id")
+@use_path_model(Meaning, path_key="meaning_id")
 @restrict(author_of_meaning, author_of_quote, assertion=True)
 async def get_meaning(
   _request: Request,
@@ -41,11 +40,11 @@ async def get_meaning(
 # CREATE
 @validate_body(MeaningSchema)
 @use_user
-@use_path_quote(path_key="quote_id")
+@use_path_model(Quote, path_key="quote_id")
 @restrict(author_of_quote, assertion=False)
 async def create_meaning(
   _request: Request,
-  user: dict,
+  user: Author,
   quote: Quote,
   data: MeaningSchema,
   *_args,
@@ -55,7 +54,7 @@ async def create_meaning(
   """
 
   meaning = await Meaning.get_or_none(
-    author=user["user_id"],
+    author=user.user_id,
     quote=quote,
   )
 
@@ -68,7 +67,7 @@ async def create_meaning(
     )
 
   meaning = await Meaning.create(
-    author=user["user_id"],
+    author=user.user_id,
     body=data.body,
     quote=quote,
   )
@@ -84,7 +83,7 @@ async def create_meaning(
 
 # DELETE
 @use_user
-@use_path_meaning(path_key="meaning_id")
+@use_path_model(Meaning, path_key="meaning_id")
 @restrict(author_of_meaning, assertion=True)
 async def disown_meaning(
   _request: Request,

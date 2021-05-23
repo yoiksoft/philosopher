@@ -3,7 +3,7 @@
 
 import typing
 
-from app.models import Meaning, Quote
+from app.models import Author, Meaning, Quote
 
 
 class MissingArgumentsError(Exception):
@@ -15,20 +15,20 @@ def author_is_self(*_args, **kwargs) -> bool:
   """Checks that the author in path is the user making the request.
   """
 
-  author: dict = kwargs.get("author")
-  user: dict = kwargs.get("user")
+  author: Author = kwargs.get("author")
+  user: Author = kwargs.get("user")
 
   if not author or not user:
     raise MissingArgumentsError
 
-  return user["user_id"] == author["user_id"]
+  return user.user_id == author.user_id
 
 
 def author_of_quote(*_args, **kwargs) -> bool:
   """Checks if the user is the author of the quote.
   """
 
-  user: dict = kwargs.get("user")
+  user: Author = kwargs.get("user")
   resource: typing.Union[Quote, Meaning] = kwargs.get("quote") \
                                         or kwargs.get("meaning")
 
@@ -36,9 +36,9 @@ def author_of_quote(*_args, **kwargs) -> bool:
     raise MissingArgumentsError
 
   if isinstance(resource, Quote):
-    return resource.author == user["user_id"]
+    return resource.author == user.user_id
   if isinstance(resource, Meaning):
-    return resource.quote.author == user["user_id"]
+    return resource.quote.author == user.user_id
   return False
 
 
@@ -46,10 +46,10 @@ def author_of_meaning(*_args, **kwargs) -> bool:
   """Checks if the user is the author of the meaning.
   """
 
-  user: dict = kwargs.get("user")
+  user: Author = kwargs.get("user")
   meaning: Meaning = kwargs.get("meaning")
 
   if not user or not meaning:
     raise MissingArgumentsError
 
-  return meaning.author == user["user_id"]
+  return meaning.author == user.user_id

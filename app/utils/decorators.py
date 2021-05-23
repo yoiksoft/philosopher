@@ -6,9 +6,10 @@ from functools import wraps
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+from tortoise.models import Model
 from typesystem.schemas import Schema
 
-from app.models import Meaning, Quote
+from app.models import Author, Meaning
 from app.utils import auth
 
 
@@ -17,98 +18,58 @@ def use_user(func: typing.Coroutine) -> typing.Coroutine:
   """
 
   async def inner(request: Request, *args, **kwargs):
-
     # Grab Auth0 ID from request state.
     user_id = request.state.user["sub"]
-
     # Get user profile information.
-    user_data = await auth.get_user(user_id=user_id)
-
+    user = await auth.get_user(user_id=user_id)
     # Run the underlying endpoint, passing down the user.
-    return await func(request, *args, user=user_data, **kwargs)
+    return await func(request, *args, user=user, **kwargs)
 
   return inner
 
 
-def use_path_author(path_key: str = "username"):
-  """Wrapper that exposes an author from request path.
+def use_path_model(model: Model, path_key: str = "model_id"):
+  """Wrapper that exposes a model from request path.
   """
 
   def wrapper(func: typing.Coroutine):
 
     @wraps(func)
     async def wrapped(request: Request, *args, **kwargs):
-      username = request.path_params[path_key]
-      author = await auth.get_user(username=username)
-      if not author:
-        return JSONResponse(
-          {"message": "Author not found."},
-          status_code=404,
-        )
-      return await func(request, *args, author=author, **kwargs)
+      instance_pk = request.path_params[path_key]
 
-    return wrapped
+      if issubclass(model, Model):
+        instance = await model.get_or_none(pk=instance_pk)
+      elif model is Author:
+        instance = await auth.get_user(username=instance_pk)
+      else:
+        instance = None
 
-  return wrapper
-
-
-def use_path_meaning(path_key: str = "meaning_id"):
-  """Wrapper that exposes a meaning from request path.
-  """
-
-  def wrapper(func: typing.Coroutine):
-
-    @wraps(func)
-    async def wrapped(request: Request, *args, **kwargs):
-      meaning_id = request.path_params[path_key]
-      meaning = await Meaning.get_or_none(pk=meaning_id)
-      if not meaning:
+      if not instance:
         return JSONResponse(
           {
-            "message": "Meaning not found.",
+            "message": "Not found.",
           },
           status_code=404,
         )
-      await meaning.fetch_related("quote")
-      return await func(request, *args, meaning=meaning, **kwargs)
+      if isinstance(instance, Meaning):
+        await instance.fetch_related("quote")
+      key: str = instance.__class__.__name__.lower()
+      kwargs[key] = instance
+      return await func(request, *args, **kwargs)
 
     return wrapped
 
   return wrapper
 
 
-def use_path_quote(path_key: str = "quote_id"):
-  """Wrapper that exposes a quote from request path.
-  """
-
-  def wrapper(func: typing.Coroutine):
-
-    @wraps(func)
-    async def wrapped(request: Request, *args, **kwargs):
-      quote_id = request.path_params[path_key]
-      quote = await Quote.get_or_none(pk=quote_id)
-      if not quote:
-        return JSONResponse(
-          {
-            "message": "Quote not found.",
-          },
-          status_code=404,
-        )
-      return await func(request, *args, quote=quote, **kwargs)
-
-    return wrapped
-
-  return wrapper
-
-
-def restrict(
-  *check_functions: typing.Iterable[typing.Callable[..., bool]],
-  assertion: bool = True
-) -> typing.Callable:
+def restrict(*check_functions: typing.Iterable[typing.Callable[..., bool]],
+             assertion: bool = True) -> typing.Callable:
   """Wrap an endpiont with some sort of restriction.
   """
 
   def wrapper(func: typing.Coroutine) -> typing.Coroutine:
+
     @wraps(func)
     async def wrapped(request: Request, *args, **kwargs) -> JSONResponse:
       results = [fun(*args, **kwargs) for fun in check_functions]
@@ -120,7 +81,9 @@ def restrict(
           status_code=403,
         )
       return await func(request, *args, **kwargs)
+
     return wrapped
+
   return wrapper
 
 
@@ -141,9 +104,7 @@ def validate_body(schema: Schema):
           },
           status_code=400,
         )
-
       validated, errors = schema.validate_or_error(data)
-
       if errors:
         return JSONResponse(
           {
@@ -152,7 +113,6 @@ def validate_body(schema: Schema):
           },
           status_code=400,
         )
-
       return await func(request, *args, data=validated, **kwargs)
 
     return wrapped

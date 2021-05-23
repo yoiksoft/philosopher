@@ -5,6 +5,31 @@ from tortoise.models import Model
 from tortoise import fields
 
 
+class Author:
+  """Simple Python model representing an author.
+  """
+
+  def __init__(
+    self,
+    user_id: str,
+    username: str,
+    picture: str,
+  ):
+    self.user_id = user_id
+    self.username = username
+    self.picture = picture
+
+  async def to_dict(self):
+    """Serialize into dictionary.
+    """
+
+    return {
+      "user_id": self.user_id,
+      "username": self.username,
+      "picture": self.picture,
+    }
+
+
 class Quote(Model):
   """Quote model
   """

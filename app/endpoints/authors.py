@@ -5,15 +5,15 @@ import typing
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from app.utils.decorators import use_user, use_path_author, restrict
+from app.utils.decorators import use_user, use_path_model, restrict
 from app.utils.restrictions import author_is_self
-from app.models import Meaning, Quote
+from app.models import Author, Meaning, Quote
 
 
-@use_path_author(path_key="username")
+@use_path_model(Author, path_key="username")
 async def get_author(
   _request: Request,
-  author: dict,
+  author: Author,
   *_args,
   **_kwargs,
 ) -> JSONResponse:
@@ -24,17 +24,17 @@ async def get_author(
     {
       "message": "Success.",
       "result": {
-        "author": author,
+        "author": await author.to_dict(),
       },
     },
     status_code=200,
   )
 
 
-@use_path_author(path_key="username")
+@use_path_model(Author, path_key="username")
 async def get_quotes_from_author(
   request: Request,
-  author: dict,
+  author: Author,
   *_args,
   **_kwargs,
 ) -> JSONResponse:
@@ -62,7 +62,7 @@ async def get_quotes_from_author(
     )
 
   quotes: typing.Iterable[Quote] = await Quote \
-    .filter(author=author["user_id"]) \
+    .filter(author=author.user_id) \
     .offset(offset) \
     .limit(count)
 
@@ -77,11 +77,11 @@ async def get_quotes_from_author(
 
 # GET ALL
 @use_user
-@use_path_author(path_key="username")
+@use_path_model(Author, path_key="username")
 @restrict(author_is_self, assertion=True)
 async def get_meanings_from_author(
   request: Request,
-  author: dict,
+  author: Author,
   *_args,
   **_kwargs,
 ) -> JSONResponse:
@@ -109,14 +109,14 @@ async def get_meanings_from_author(
     )
 
   meanings: typing.Iterable[Meaning] = await Meaning \
-    .filter(author=author["user_id"]) \
+    .filter(author=author.user_id) \
     .offset(offset) \
     .limit(count)
 
   return JSONResponse(
     {
       "message": "Success.",
-      "result": [dict(meaning) for meaning in meanings],
+      "result": [await meaning.to_dict() for meaning in meanings],
     },
     status_code=200,
   )

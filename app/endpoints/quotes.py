@@ -6,16 +6,16 @@ from starlette.responses import JSONResponse
 
 from app.utils.decorators import (
   validate_body,
-  use_path_quote,
+  use_path_model,
   use_user,
   restrict,
 )
 from app.utils.restrictions import author_of_quote
 from app.schemas import QuoteSchema
-from app.models import Quote
+from app.models import Author, Quote
 
 
-@use_path_quote(path_key="quote_id")
+@use_path_model(Quote, path_key="quote_id")
 async def get_quote(
   _request: Request,
   quote: Quote,
@@ -39,7 +39,7 @@ async def get_quote(
 @use_user
 async def create_quote(
   _request: Request,
-  user: dict,
+  user: Author,
   data: dict,
   *_args,
   **_kwargs,
@@ -48,7 +48,7 @@ async def create_quote(
   """
 
   quote = await Quote.create(
-    author=user["user_id"],
+    author=user.user_id,
     body=data.body,
   )
 
@@ -62,7 +62,7 @@ async def create_quote(
 
 
 @use_user
-@use_path_quote(path_key="quote_id")
+@use_path_model(Quote, path_key="quote_id")
 @restrict(author_of_quote, assertion=True)
 async def disown_quote(
   _request: Request,
